@@ -13,11 +13,11 @@ package sniffer
 import (
 	"fmt"
 
-	"github.com/google/netstack/tcpip"
-	"github.com/google/netstack/tcpip/buffer"
-	"github.com/google/netstack/tcpip/header"
-	"github.com/google/netstack/tcpip/stack"
 	"log"
+	"mtrix.io_vpn/tcpip"
+	"mtrix.io_vpn/tcpip/buffer"
+	"mtrix.io_vpn/tcpip/header"
+	"mtrix.io_vpn/tcpip/stack"
 )
 
 type endpoint struct {

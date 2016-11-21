@@ -8,9 +8,9 @@
 package channel
 
 import (
-	"github.com/google/netstack/tcpip"
-	"github.com/google/netstack/tcpip/buffer"
-	"github.com/google/netstack/tcpip/stack"
+	"mtrix.io_vpn/tcpip"
+	"mtrix.io_vpn/tcpip/buffer"
+	"mtrix.io_vpn/tcpip/stack"
 )
 
 // PacketInfo holds all the information about an outbound packet.
