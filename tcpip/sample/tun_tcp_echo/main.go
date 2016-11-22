@@ -23,33 +23,9 @@ import (
 	"mtrix.io_vpn/tcpip/network/ipv4"
 	"mtrix.io_vpn/tcpip/network/ipv6"
 	"mtrix.io_vpn/tcpip/stack"
-	"mtrix.io_vpn/tcpip/transport/tcp"
+	"mtrix.io_vpn/tcpip/transport/udp"
 	"mtrix.io_vpn/waiter"
 )
-
-func echo(wq *waiter.Queue, ep tcpip.Endpoint) {
-	defer ep.Close()
-
-	// Create wait queue entry that notifies a channel.
-	waitEntry, notifyCh := waiter.NewChannelEntry(nil)
-
-	wq.EventRegister(&waitEntry, waiter.EventIn)
-	defer wq.EventUnregister(&waitEntry)
-
-	for {
-		v, err := ep.Read(nil)
-		if err != nil {
-			if err == tcpip.ErrWouldBlock {
-				<-notifyCh
-				continue
-			}
-
-			return
-		}
-
-		ep.Write(v, nil)
-	}
-}
 
 func main() {
 	if len(os.Args) != 4 {
@@ -87,7 +63,7 @@ func main() {
 
 	// Create the stack with ip and tcp protocols, then add a tun-based
 	// NIC and address.
-	s := stack.New([]string{ipv4.ProtocolName, ipv6.ProtocolName}, []string{tcp.ProtocolName})
+	s := stack.New([]string{ipv4.ProtocolName, ipv6.ProtocolName}, []string{udp.ProtocolName})
 
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {
@@ -120,7 +96,7 @@ func main() {
 
 	// Create TCP endpoint, bind it, then start listening.
 	var wq waiter.Queue
-	ep, err := s.NewEndpoint(tcp.ProtocolNumber, proto, &wq)
+	ep, err := s.NewEndpoint(udp.ProtocolNumber, proto, &wq)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,26 +107,22 @@ func main() {
 		log.Fatal("Bind failed: ", err)
 	}
 
-	if err := ep.Listen(10); err != nil {
-		log.Fatal("Listen failed: ", err)
-	}
-
 	// Wait for connections to appear.
 	waitEntry, notifyCh := waiter.NewChannelEntry(nil)
 	wq.EventRegister(&waitEntry, waiter.EventIn)
 	defer wq.EventUnregister(&waitEntry)
 
 	for {
-		n, wq, err := ep.Accept()
+		v, err := ep.Read(nil)
 		if err != nil {
 			if err == tcpip.ErrWouldBlock {
 				<-notifyCh
 				continue
 			}
 
-			log.Fatal("Accept() failed:", err)
+			return
 		}
 
-		go echo(wq, n)
+		ep.Write(v, nil)
 	}
 }
