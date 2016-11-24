@@ -4,6 +4,10 @@
 
 package header
 
+import (
+	"mtrix.io_vpn/tcpip"
+)
+
 type Mv4Fields struct {
 }
 

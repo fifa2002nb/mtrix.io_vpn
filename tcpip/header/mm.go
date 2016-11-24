@@ -6,6 +6,7 @@ package header
 
 import (
 	"encoding/binary"
+	"mtrix.io_vpn/tcpip"
 )
 
 const (
@@ -99,7 +100,7 @@ func (b MM) Encode(i *MMFields) {
 }
 
 // IsValid performs basic validation on the packet.
-func (b IPv4) IsValid(pktSize int) bool {
+func (b MM) IsValid(pktSize int) bool {
 	if len(b) < MMMinimumSize {
 		return false
 	}
