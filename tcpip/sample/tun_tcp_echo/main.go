@@ -20,50 +20,24 @@ import (
 	"mtrix.io_vpn/tcpip/link/fdbased"
 	"mtrix.io_vpn/tcpip/link/rawfile"
 	"mtrix.io_vpn/tcpip/link/tun"
-	"mtrix.io_vpn/tcpip/network/ipv4"
-	"mtrix.io_vpn/tcpip/network/ipv6"
+	"mtrix.io_vpn/tcpip/network/mv4"
 	"mtrix.io_vpn/tcpip/stack"
-	"mtrix.io_vpn/tcpip/transport/udp"
+	"mtrix.io_vpn/tcpip/transport/mm"
 	"mtrix.io_vpn/waiter"
 )
 
 func main() {
 	if len(os.Args) != 4 {
-		log.Fatal("Usage: ", os.Args[0], " <tun-device> <local-address> <local-port>")
+		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
 	}
 
 	tunName := os.Args[1]
-	addrName := os.Args[2]
-	portName := os.Args[3]
 
 	rand.Seed(time.Now().UnixNano())
 
-	// Parse the IP address. Support both ipv4 and ipv6.
-	parsedAddr := net.ParseIP(addrName)
-	if parsedAddr == nil {
-		log.Fatalf("Bad IP address: %v", addrName)
-	}
-
-	var addr tcpip.Address
-	var proto tcpip.NetworkProtocolNumber
-	if parsedAddr.To4() != nil {
-		addr = tcpip.Address(parsedAddr.To4())
-		proto = ipv4.ProtocolNumber
-	} else if parsedAddr.To16() != nil {
-		addr = tcpip.Address(parsedAddr.To16())
-		proto = ipv6.ProtocolNumber
-	} else {
-		log.Fatalf("Unknown IP type: %v", addrName)
-	}
-
-	localPort, err := strconv.Atoi(portName)
-	if err != nil {
-		log.Fatalf("Unable to convert port %v: %v", portName, err)
-	}
-
 	// Create the stack with ip and tcp protocols, then add a tun-based
 	// NIC and address.
-	s := stack.New([]string{ipv4.ProtocolName, ipv6.ProtocolName}, []string{udp.ProtocolName})
+	s := stack.New([]string{mv4.ProtocolName}, []string{mm.ProtocolName})
 
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {
@@ -80,15 +54,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := s.AddAddress(1, proto, addr); err != nil {
+	// add default networkEndpoint 2.2.2.2
+	if err := s.AddAddress(1, mv4.ProtocolNumber, tcpip.Address(strings.Repeat("\x02", 4))); err != nil {
 		log.Fatal(err)
 	}
 
-	// Add default route.
+	// Add default route. 1.1.1.1
 	s.SetRouteTable([]tcpip.Route{
 		{
-			Destination: tcpip.Address(strings.Repeat("\x00", len(addr))),
-			Mask:        tcpip.Address(strings.Repeat("\x00", len(addr))),
+			Destination: tcpip.Address(strings.Repeat("\x01", 4)),
+			Mask:        tcpip.Address(strings.Repeat("\x00", 4)),
 			Gateway:     "",
 			NIC:         1,
 		},
@@ -96,14 +71,15 @@ func main() {
 
 	// Create TCP endpoint, bind it, then start listening.
 	var wq waiter.Queue
-	ep, err := s.NewEndpoint(udp.ProtocolNumber, proto, &wq)
+	ep, err := s.NewEndpoint(mm.ProtocolNumber, mv4.ProtocolNumber, &wq)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer ep.Close()
 
-	if err := ep.Bind(tcpip.FullAddress{0, "", uint16(localPort)}, nil); err != nil {
+	// bind to 2.2.2.2:999
+	if err := ep.Bind(tcpip.FullAddress{1, tcpip.Address(strings.Repeat("\x02", 4)), 999}, nil); err != nil {
 		log.Fatal("Bind failed: ", err)
 	}
 
@@ -112,8 +88,10 @@ func main() {
 	wq.EventRegister(&waitEntry, waiter.EventIn)
 	defer wq.EventUnregister(&waitEntry)
 
+	remoteAddr := tcpip.Address{}
+
 	for {
-		v, err := ep.Read(nil)
+		v, err := ep.Read(&remoteAddr)
 		if err != nil {
 			if err == tcpip.ErrWouldBlock {
 				<-notifyCh
@@ -123,6 +101,6 @@ func main() {
 			return
 		}
 
-		ep.Write(v, nil)
+		ep.Write(v, &remoteAddr)
 	}
 }
