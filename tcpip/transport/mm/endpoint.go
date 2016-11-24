@@ -11,7 +11,6 @@ import (
 
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/buffer"
-	"mtrix.io_vpn/tcpip/header"
 	"mtrix.io_vpn/tcpip/stack"
 	"mtrix.io_vpn/waiter"
 )
@@ -300,7 +299,7 @@ func (e *endpoint) GetSockOpt(opt interface{}) error {
 // provided identity.
 func sendMM(r *stack.Route, data buffer.View, localPort, remotePort uint16) error {
 	// make a empty header
-	hdr = &NewPrependable(0)
+	hdr = &buffer.NewPrependable(0)
 	return r.WritePacket(&hdr, data, ProtocolNumber)
 }
 
@@ -428,7 +427,7 @@ func (e *endpoint) bindLocked(addr tcpip.FullAddress, commit func() error) error
 		return tcpip.ErrInvalidEndpointState
 	}
 
-	netProto = e.netProto
+	netProto := e.netProto
 	netProtos := []tcpip.NetworkProtocolNumber{netProto}
 
 	if len(addr.Addr) != 0 {
@@ -442,6 +441,7 @@ func (e *endpoint) bindLocked(addr tcpip.FullAddress, commit func() error) error
 		LocalPort:    addr.Port,
 		LocalAddress: addr.Addr,
 	}
+	var err error
 	id, err = e.registerWithStack(addr.NIC, netProtos, id)
 	if err != nil {
 		return err

@@ -16,6 +16,8 @@ type Mv4 []byte
 const (
 	Mv4MinimumSize = 0
 
+	MMv4AddressSize = 4
+
 	Mv4Version = 4
 
 	Mv4ProtocolNumber tcpip.NetworkProtocolNumber = 0x9998

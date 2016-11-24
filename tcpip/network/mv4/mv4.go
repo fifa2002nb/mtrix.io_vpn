@@ -5,9 +5,7 @@
 package mv4
 
 import (
-	"crypto/rand"
 	"strings"
-	"sync/atomic"
 
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/buffer"
@@ -31,6 +29,8 @@ type endpoint struct {
 	linkEP     stack.LinkEndpoint
 	dispatcher stack.TransportDispatcher
 }
+
+type address [header.MMv4AddressSize]byte
 
 func newEndpoint(nicid tcpip.NICID, addr tcpip.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) *endpoint {
 	e := &endpoint{
