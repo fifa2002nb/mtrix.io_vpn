@@ -136,11 +136,11 @@ func (e *endpoint) dispatch(d stack.NetworkDispatcher, largeV buffer.View) (bool
 	var p tcpip.NetworkProtocolNumber
 	switch header.IPVersion(e.views[0]) {
 	case header.IPv4Version:
-		p = header.IPv4ProtocolNumber
-		//p = header.Mv4ProtocolNumber
+		//p = header.IPv4ProtocolNumber
+		p = header.Mv4ProtocolNumber
 	case header.IPv6Version:
-		p = header.IPv6ProtocolNumber
-		//p = header.Mv4ProtocolNumber
+		//p = header.IPv6ProtocolNumber
+		p = header.Mv4ProtocolNumber
 	default:
 		return true, nil
 	}
