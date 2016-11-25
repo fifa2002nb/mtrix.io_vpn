@@ -5,8 +5,6 @@
 package mv4
 
 import (
-	"strings"
-
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/buffer"
 	"mtrix.io_vpn/tcpip/header"
@@ -72,10 +70,7 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 
 // WritePacket writes a packet to the given destination address and protocol.
 func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol tcpip.TransportProtocolNumber) error {
-	if 0 < hdr.UsedLength() { // keep no hdr
-		hdr = &NewPrependable(0)
-	}
-	return e.linkEP.WritePacket(r, hdr, payload, ProtocolNumber)
+	return e.linkEP.WritePacket(r, nil, payload, ProtocolNumber)
 }
 
 // HandlePacket is called by the link layer when new mv4 packets arrive for
@@ -112,8 +107,8 @@ func (p *protocol) MinimumPacketSize() int {
 
 // ParseAddresses implements NetworkProtocol.ParseAddresses.
 func (*protocol) ParseAddresses(v buffer.View) (src, dst tcpip.Address) {
-	// 1.1.1.1, 2.2.2.2
-	return tcpip.Address(strings.Repeat("\x01", 4)), tcpip.Address(strings.Repeat("\x02", 4))
+	// src:10.1.1.3, dst:10.1.1.2
+	return tcpip.Address("\x0A\x01\x01\x03"), tcpip.Address("\x0A\x01\x01\x02")
 }
 
 // NewEndpoint creates a new mv4 endpoint.

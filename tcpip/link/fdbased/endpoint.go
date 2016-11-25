@@ -77,9 +77,12 @@ func (*endpoint) MaxHeaderLength() uint16 {
 // WritePacket writes outbound packets to the file descriptor. If it is not
 // currently writable, the packet is dropped.
 func (e *endpoint) WritePacket(_ *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol tcpip.NetworkProtocolNumber) error {
-	if payload == nil {
+	if nil == payload && (nil == hdr || 0 == hdr.UsedLength()) {
+		return nil
+	} else if nil == payload {
 		return rawfile.NonBlockingWrite(e.fd, hdr.UsedBytes())
-
+	} else if nil == hdr || 0 == hdr.UsedLength() {
+		return rawfile.NonBlockingWrite(e.fd, payload)
 	}
 
 	return rawfile.NonBlockingWrite2(e.fd, hdr.UsedBytes(), payload)
@@ -133,11 +136,11 @@ func (e *endpoint) dispatch(d stack.NetworkDispatcher, largeV buffer.View) (bool
 	var p tcpip.NetworkProtocolNumber
 	switch header.IPVersion(e.views[0]) {
 	case header.IPv4Version:
-		//p = header.IPv4ProtocolNumber
-		p = header.Mv4ProtocolNumber
+		p = header.IPv4ProtocolNumber
+		//p = header.Mv4ProtocolNumber
 	case header.IPv6Version:
-		//p = header.IPv6ProtocolNumber
-		p = header.Mv4ProtocolNumber
+		p = header.IPv6ProtocolNumber
+		//p = header.Mv4ProtocolNumber
 	default:
 		return true, nil
 	}

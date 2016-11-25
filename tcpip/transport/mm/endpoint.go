@@ -7,12 +7,11 @@ package mm
 import (
 	"errors"
 	"io"
-	"sync"
-
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/buffer"
 	"mtrix.io_vpn/tcpip/stack"
 	"mtrix.io_vpn/waiter"
+	"sync"
 )
 
 type mmPacket struct {
@@ -249,7 +248,6 @@ func (e *endpoint) Write(v buffer.View, to *tcpip.FullAddress) (uintptr, error) 
 		route = &r
 		dstPort = to.Port
 	}
-
 	sendMM(route, v, e.id.LocalPort, dstPort)
 	return uintptr(len(v)), nil
 }
@@ -298,9 +296,7 @@ func (e *endpoint) GetSockOpt(opt interface{}) error {
 // sendMM sends a MM segment via the provided network endpoint and under the
 // provided identity.
 func sendMM(r *stack.Route, data buffer.View, localPort, remotePort uint16) error {
-	// make a empty header
-	hdr = &buffer.NewPrependable(0)
-	return r.WritePacket(&hdr, data, ProtocolNumber)
+	return r.WritePacket(nil, data, ProtocolNumber)
 }
 
 // Connect connects the endpoint to its peer. Specifying a NIC is optional.

@@ -8,12 +8,9 @@
 package main
 
 import (
-	"log"
+	log "github.com/Sirupsen/logrus"
 	"math/rand"
-	"net"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"mtrix.io_vpn/tcpip"
@@ -27,7 +24,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 4 {
+	if len(os.Args) != 2 {
 		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
 	}
 
@@ -54,16 +51,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// add default networkEndpoint 2.2.2.2
-	if err := s.AddAddress(1, mv4.ProtocolNumber, tcpip.Address(strings.Repeat("\x02", 4))); err != nil {
+	// add default networkEndpoint 10.1.1.2
+	if err := s.AddAddress(1, mv4.ProtocolNumber, tcpip.Address("\x0A\x01\x01\x02")); err != nil {
 		log.Fatal(err)
 	}
 
-	// Add default route. 1.1.1.1
+	// Add default route. 10.1.1.0/24
 	s.SetRouteTable([]tcpip.Route{
 		{
-			Destination: tcpip.Address(strings.Repeat("\x01", 4)),
-			Mask:        tcpip.Address(strings.Repeat("\x00", 4)),
+			Destination: tcpip.Address("\x0A\x01\x01\x00"), //10.1.1.0
+			Mask:        tcpip.Address("\xFF\xFF\xFF\x00"), // 255.255.255.0
 			Gateway:     "",
 			NIC:         1,
 		},
@@ -78,8 +75,8 @@ func main() {
 
 	defer ep.Close()
 
-	// bind to 2.2.2.2:999
-	if err := ep.Bind(tcpip.FullAddress{1, tcpip.Address(strings.Repeat("\x02", 4)), 999}, nil); err != nil {
+	// bind to 10.1.1.2:999
+	if err := ep.Bind(tcpip.FullAddress{1, tcpip.Address("\x0A\x01\x01\x02"), 999}, nil); err != nil {
 		log.Fatal("Bind failed: ", err)
 	}
 
@@ -88,7 +85,7 @@ func main() {
 	wq.EventRegister(&waitEntry, waiter.EventIn)
 	defer wq.EventUnregister(&waitEntry)
 
-	remoteAddr := tcpip.Address{}
+	remoteAddr := tcpip.FullAddress{}
 
 	for {
 		v, err := ep.Read(&remoteAddr)
@@ -101,6 +98,9 @@ func main() {
 			return
 		}
 
-		ep.Write(v, &remoteAddr)
+		_, err = ep.Write(v, &remoteAddr)
+		if nil != err {
+			log.Infof("write err:%v", err)
+		}
 	}
 }
