@@ -97,7 +97,7 @@ func main() {
 
 			return
 		}
-
+		log.Infof("rcv: %v", v)
 		_, err = ep.Write(v, &remoteAddr)
 		if nil != err {
 			log.Infof("write err:%v", err)
