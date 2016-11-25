@@ -8,36 +8,39 @@
 package main
 
 import (
-	"log"
+	log "github.com/Sirupsen/logrus"
 	"math/rand"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/link/fdbased"
 	"mtrix.io_vpn/tcpip/link/rawfile"
 	"mtrix.io_vpn/tcpip/link/tun"
 	"mtrix.io_vpn/tcpip/network/ipv4"
 	"mtrix.io_vpn/tcpip/stack"
-	"mtrix.io_vpn/tcpip/transport/mm"
+	"mtrix.io_vpn/tcpip/transport/udp"
 	"mtrix.io_vpn/waiter"
+	"os"
+	"strconv"
+	"time"
 )
 
 func main() {
-	if len(os.Args) != 4 {
-		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
+	if len(os.Args) != 3 {
+		log.Fatal("Usage: ", os.Args[0], " <tun-device> <local-port>")
 	}
 
 	tunName := os.Args[1]
+	portName := os.Args[2]
 
 	rand.Seed(time.Now().UnixNano())
 
+	localPort, err := strconv.Atoi(portName)
+	if err != nil {
+		log.Fatalf("Unable to convert port %v: %v", portName, err)
+	}
+
 	// Create the stack with ip and tcp protocols, then add a tun-based
 	// NIC and address.
-	s := stack.New([]string{ipv4.ProtocolName}, []string{mm.ProtocolName})
+	s := stack.New([]string{ipv4.ProtocolName}, []string{udp.ProtocolName})
 
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {
@@ -70,7 +73,7 @@ func main() {
 
 	// Create TCP endpoint, bind it, then start listening.
 	var wq waiter.Queue
-	ep, err := s.NewEndpoint(mm.ProtocolNumber, ipv4.ProtocolNumber, &wq)
+	ep, err := s.NewEndpoint(udp.ProtocolNumber, ipv4.ProtocolNumber, &wq)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,7 +81,7 @@ func main() {
 	defer ep.Close()
 
 	// bind to 10.1.1.2:999
-	if err := ep.Bind(tcpip.FullAddress{1, tcpip.Address("\x0A\x01\x01\x02"), 999}, nil); err != nil {
+	if err := ep.Bind(tcpip.FullAddress{1, tcpip.Address("\x0A\x01\x01\x02"), uint16(localPort)}, nil); err != nil {
 		log.Fatal("Bind failed: ", err)
 	}
 
