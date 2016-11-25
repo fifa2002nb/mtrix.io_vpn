@@ -59,7 +59,7 @@ func main() {
 	// Add default route. 10.1.1.0/24
 	s.SetRouteTable([]tcpip.Route{
 		{
-			Destination: tcpip.Address("\x0A\x01\x01\x00"), //10.1.1.0
+			Destination: tcpip.Address("\x0A\x01\x01\x00"), // 10.1.1.0
 			Mask:        tcpip.Address("\xFF\xFF\xFF\x00"), // 255.255.255.0
 			Gateway:     "",
 			NIC:         1,
@@ -94,9 +94,9 @@ func main() {
 				<-notifyCh
 				continue
 			}
-
 			return
 		}
+
 		log.Infof("rcv: %v", v)
 		_, err = ep.Write(v, &remoteAddr)
 		if nil != err {
