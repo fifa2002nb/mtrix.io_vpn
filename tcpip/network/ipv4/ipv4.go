@@ -127,6 +127,8 @@ func (e *endpoint) HandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 	e.dispatcher.DeliverTransportPacket(r, tcpip.TransportProtocolNumber(h.Protocol()), vv)
 }
 
+func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {}
+
 type protocol struct{}
 
 // NewProtocol creates a new protocol ipv4 protocol descriptor. This is exported

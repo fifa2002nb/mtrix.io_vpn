@@ -703,3 +703,6 @@ func (e *endpoint) HandlePacket(r *stack.Route, id stack.TransportEndpointID, vv
 		e.waiterQueue.Notify(waiter.EventIn)
 	}
 }
+
+func (e *endpoint) ReverseHandlePacket(r *Route, id TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+}

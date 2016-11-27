@@ -42,6 +42,8 @@ type TransportEndpoint interface {
 	// HandlePacket is called by the stack when new packets arrive to
 	// this transport endpoint.
 	HandlePacket(r *Route, id TransportEndpointID, vv *buffer.VectorisedView)
+
+	ReverseHandlePacket(r *Route, id TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView)
 }
 
 // TransportProtocol is the interface that needs to be implemented by transport
@@ -75,6 +77,8 @@ type TransportDispatcher interface {
 	// DeliverTransportPacket delivers the packets to the appropriate
 	// transport protocol endpoint.
 	DeliverTransportPacket(r *Route, protocol tcpip.TransportProtocolNumber, vv *buffer.VectorisedView)
+
+	ReverseDeliverTransportPacket(r *Route, protocol tcpip.TransportProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView)
 }
 
 // NetworkEndpoint is the interface that needs to be implemented by endpoints
@@ -104,6 +108,8 @@ type NetworkEndpoint interface {
 	// HandlePacket is called by the link layer when new packets arrive to
 	// this network endpoint.
 	HandlePacket(r *Route, vv *buffer.VectorisedView)
+
+	ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView)
 }
 
 // NetworkProtocol is the interface that needs to be implemented by network
@@ -132,6 +138,8 @@ type NetworkDispatcher interface {
 	// DeliverNetworkPacket finds the appropriate network protocol
 	// endpoint and hands the packet over for further processing.
 	DeliverNetworkPacket(linkEP LinkEndpoint, protocol tcpip.NetworkProtocolNumber, vv *buffer.VectorisedView)
+
+	ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol tcpip.NetworkProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView)
 }
 
 // LinkEndpoint is the interface implemented by data link layer protocols (e.g.,

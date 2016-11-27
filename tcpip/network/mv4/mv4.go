@@ -85,6 +85,9 @@ func (e *endpoint) HandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 	e.dispatcher.DeliverTransportPacket(r, header.MMProtocolNumber, vv)
 }
 
+func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+}
+
 type protocol struct{}
 
 // NewProtocol creates a new protocol mv4 protocol descriptor. This is exported

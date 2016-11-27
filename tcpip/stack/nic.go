@@ -266,9 +266,108 @@ func (n *NIC) DeliverNetworkPacket(linkEP LinkEndpoint, protocol tcpip.NetworkPr
 	ref.decRef()
 }
 
+func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol tcpip.NetworkProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+	netProto, ok := n.stack.networkProtocols[protocol]
+	if !ok {
+		atomic.AddUint64(&n.stack.stats.UnknownProtocolRcvdPackets, 1)
+		return
+	}
+
+	if len(vv.First()) < netProto.MinimumPacketSize() {
+		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
+		return
+	}
+
+	src, dst := netProto.ParseAddresses(vv.First())
+	id := NetworkEndpointID{dst}
+
+	n.mu.RLock()
+	ref := n.endpoints[id]
+	if ref != nil && !ref.tryIncRef() {
+		ref = nil
+	}
+	promiscuous := n.promiscuous
+	subnets := n.subnets
+	n.mu.RUnlock()
+
+	if ref == nil {
+		// Check if the packet is for a subnet this NIC cares about.
+		if !promiscuous {
+			for _, sn := range subnets {
+				if sn.Contains(dst) {
+					promiscuous = true
+					break
+				}
+			}
+		}
+		if promiscuous {
+			// Try again with the lock in exclusive mode. If we still can't
+			// get the endpoint, create a new "temporary" one. It will only
+			// exist while there's a route through it.
+			n.mu.Lock()
+			ref = n.endpoints[id]
+			if ref == nil || !ref.tryIncRef() {
+				ref, _ = n.addAddressLocked(protocol, dst, true)
+				if ref != nil {
+					ref.holdsInsertRef = false
+				}
+			}
+			n.mu.Unlock()
+		}
+	}
+
+	if ref == nil {
+		atomic.AddUint64(&n.stack.stats.UnknownNetworkEndpointRcvdPackets, 1)
+		return
+	}
+
+	r := makeRoute(protocol, dst, src, ref)
+	ref.ep.HandlePacket(&r, vv)
+	ref.decRef()
+}
+
 // DeliverTransportPacket delivers the packets to the appropriate transport
 // protocol endpoint.
 func (n *NIC) DeliverTransportPacket(r *Route, protocol tcpip.TransportProtocolNumber, vv *buffer.VectorisedView) {
+	state, ok := n.stack.transportProtocols[protocol]
+	if !ok {
+		atomic.AddUint64(&n.stack.stats.UnknownProtocolRcvdPackets, 1)
+		return
+	}
+
+	transProto := state.proto
+	if len(vv.First()) < transProto.MinimumPacketSize() {
+		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
+		return
+	}
+
+	srcPort, dstPort, err := transProto.ParsePorts(vv.First())
+	if err != nil {
+		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
+		return
+	}
+
+	id := TransportEndpointID{dstPort, r.LocalAddress, srcPort, r.RemoteAddress}
+	if n.demux.deliverPacket(r, protocol, vv, id) {
+		return
+	}
+	if n.stack.demux.deliverPacket(r, protocol, vv, id) {
+		return
+	}
+
+	// Try to deliver to per-stack default handler.
+	if state.defaultHandler != nil {
+		if state.defaultHandler(r, id, vv) {
+			return
+		}
+	}
+
+	// We could not find an appropriate destination for this packet, so
+	// deliver it to the global handler.
+	transProto.HandleUnknownDestinationPacket(r, id, vv)
+}
+
+func (n *NIC) ReverseDeliverTransportPacket(r *Route, protocol tcpip.TransportProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
 	state, ok := n.stack.transportProtocols[protocol]
 	if !ok {
 		atomic.AddUint64(&n.stack.stats.UnknownProtocolRcvdPackets, 1)
