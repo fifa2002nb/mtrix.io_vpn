@@ -131,3 +131,46 @@ func (d *transportDemuxer) deliverPacket(r *Route, protocol tcpip.TransportProto
 
 	return false
 }
+
+func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol tcpip.TransportProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView, id TransportEndpointID) bool {
+	eps, ok := d.protocol[protocolIDs{r.NetProto, protocol}]
+	if !ok {
+		return false
+	}
+
+	eps.mu.RLock()
+	defer eps.mu.RUnlock()
+
+	// Try to find a match with the id as provided.
+	if ep := eps.endpoints[id]; ep != nil {
+		ep.ReverseHandlePacket(r, id, hdr, vv)
+		return true
+	}
+
+	// Try to find a match with the id minus the local address.
+	nid := id
+
+	nid.LocalAddress = ""
+	if ep := eps.endpoints[nid]; ep != nil {
+		ep.ReverseHandlePacket(r, id, hdr, vv)
+		return true
+	}
+
+	// Try to find a match with the id minus the remote part.
+	nid.LocalAddress = id.LocalAddress
+	nid.RemoteAddress = ""
+	nid.RemotePort = 0
+	if ep := eps.endpoints[nid]; ep != nil {
+		ep.ReverseHandlePacket(r, id, hdr, vv)
+		return true
+	}
+
+	// Try to find a match with only the local port.
+	nid.LocalAddress = ""
+	if ep := eps.endpoints[nid]; ep != nil {
+		ep.ReverseHandlePacket(r, id, hdr, vv)
+		return true
+	}
+
+	return false
+}

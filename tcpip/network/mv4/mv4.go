@@ -5,6 +5,7 @@
 package mv4
 
 import (
+	"math/rand"
 	"mtrix.io_vpn/tcpip"
 	"mtrix.io_vpn/tcpip/buffer"
 	"mtrix.io_vpn/tcpip/header"
@@ -86,6 +87,19 @@ func (e *endpoint) HandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 }
 
 func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+	h := header.IPv4(vv.First())
+	if !h.IsValid(vv.Size()) {
+		return
+	}
+
+	if nil == hdr {
+		hdr = buffer.NewPrependable(header.MMMinimumSize + int(r.MaxHeaderLength()))
+	}
+
+	m := header.Mv4(hdr.Prepend(header.Mv4MinimumSize))
+	m.SetRandNum(uint32(rand.Intn(1000))) //随机数
+
+	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMProtocolNumber, hdr, vv)
 }
 
 type protocol struct{}

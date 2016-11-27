@@ -40,7 +40,7 @@ const (
 	MM_STAT_WORKING                // working
 	MM_STAT_FIN                    // finishing
 
-	MMMinimumSize = 16
+	MMMinimumSize = 12
 
 	MMVersion = 4
 

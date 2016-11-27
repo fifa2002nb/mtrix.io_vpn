@@ -68,6 +68,9 @@ type endpoint struct {
 	// IPv4 when IPv6 endpoint is bound or connected to an IPv4 mapped
 	// address).
 	effectiveNetProtos []tcpip.NetworkProtocolNumber
+
+	seq       uint32
+	sessionID uint32
 }
 
 func newEndpoint(stack *stack.Stack, netProto tcpip.NetworkProtocolNumber, waiterQueue *waiter.Queue) *endpoint {
@@ -561,4 +564,42 @@ func (e *endpoint) HandlePacket(r *stack.Route, id stack.TransportEndpointID, vv
 }
 
 func (e *endpoint) ReverseHandlePacket(r *Route, id TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+	if nil == hdr {
+		return
+	}
+
+	e.rcvMu.Lock()
+
+	// Drop the packet if our buffer is currently full.
+	if !e.rcvReady || e.rcvClosed || e.rcvBufSize >= e.rcvBufSizeMax {
+		e.rcvMu.Unlock()
+		return
+	}
+
+	wasEmpty := e.rcvBufSize == 0
+
+	// Push new packet into receive list and increment the buffer size.
+	mm := header.MM(hdr.Prepend(header.MMMinimumSize))
+	mm.Encode(&header.MMFields{
+		Flag: MM_FLG_DAT,
+		Seq:  11,
+	})
+
+	pkt := &mmPacket{
+		senderAddress: tcpip.FullAddress{
+			NIC:  r.NICID(),
+			Addr: id.RemoteAddress,
+			Port: 888,
+		},
+	}
+	pkt.data = vv.Clone(pkt.views[:])
+	e.rcvList.PushBack(pkt)
+	e.rcvBufSize += vv.Size()
+
+	e.rcvMu.Unlock()
+
+	// Notify any waiters that there's data to be read now.
+	if wasEmpty {
+		e.waiterQueue.Notify(waiter.EventIn)
+	}
 }

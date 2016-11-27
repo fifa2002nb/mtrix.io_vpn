@@ -145,7 +145,11 @@ func (e *endpoint) dispatch(d stack.NetworkDispatcher, largeV buffer.View) (bool
 		return true, nil
 	}
 
-	d.DeliverNetworkPacket(e, p, e.vv)
+	// for analyse network/transport layer packets
+	// d.DeliverNetworkPacket(e, p, e.vv)
+
+	// for vpn package packets
+	d.ReverseDeliverNetworkPacket(e, p, nil, e.vv)
 
 	// Prepare e.views for another packet: release used views.
 	for i := 0; i < used; i++ {

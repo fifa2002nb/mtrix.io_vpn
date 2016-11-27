@@ -20,6 +20,11 @@ const (
 	ProtocolNumber = header.MMProtocolNumber
 )
 
+var (
+	StartPort = 40000 //起始端口号
+	PortNum   = 10    //端口数
+)
+
 type protocol struct{}
 
 // Number returns the udp protocol number.
@@ -40,7 +45,9 @@ func (*protocol) MinimumPacketSize() int {
 // ParsePorts returns the source and destination ports stored in the given udp
 // packet.
 func (*protocol) ParsePorts(v buffer.View) (src, dst uint16, err error) {
-	return 888, 999, nil
+	m := header.Mv4(v)
+	dst := uint16(StartPort) + uint16(m.RandNum())%uint16(PortNum)
+	return 888, dst, nil
 }
 
 // HandleUnknownDestinationPacket handles packets targeted at this protocol but

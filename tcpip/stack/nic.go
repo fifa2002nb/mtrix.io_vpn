@@ -322,7 +322,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol tcpip.Ne
 	}
 
 	r := makeRoute(protocol, dst, src, ref)
-	ref.ep.HandlePacket(&r, vv)
+	ref.ep.ReverseHandlePacket(&r, hdr, vv)
 	ref.decRef()
 }
 
@@ -380,30 +380,19 @@ func (n *NIC) ReverseDeliverTransportPacket(r *Route, protocol tcpip.TransportPr
 		return
 	}
 
-	srcPort, dstPort, err := transProto.ParsePorts(vv.First())
+	srcPort, dstPort, err := transProto.ParsePorts(hdr.View())
 	if err != nil {
 		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
 		return
 	}
 
 	id := TransportEndpointID{dstPort, r.LocalAddress, srcPort, r.RemoteAddress}
-	if n.demux.deliverPacket(r, protocol, vv, id) {
+	if n.demux.reverseDeliverPacket(r, protocol, hdr, vv, id) {
 		return
 	}
-	if n.stack.demux.deliverPacket(r, protocol, vv, id) {
+	if n.stack.demux.reverseDeliverPacket(r, protocol, hdr, vv, id) {
 		return
 	}
-
-	// Try to deliver to per-stack default handler.
-	if state.defaultHandler != nil {
-		if state.defaultHandler(r, id, vv) {
-			return
-		}
-	}
-
-	// We could not find an appropriate destination for this packet, so
-	// deliver it to the global handler.
-	transProto.HandleUnknownDestinationPacket(r, id, vv)
 }
 
 // ID returns the identifier of n.
