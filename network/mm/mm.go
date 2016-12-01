@@ -91,14 +91,16 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 
 	// 组装MM协议头部
 	m := header.MM(hdr.Prepend(header.MMMinimumSize))
+
 	m.Encode(&header.MMFields{
-		Magic:         uint32(header.MMMagic), // MM协议的魔幻数
+		Magic:         uint16(header.MMMagic), // MM协议的魔幻数
 		Flag:          header.MM_FLG_DAT,      // 暂时初始化为DAT类型
 		Seq:           uint32(0),              // 暂时初始化为0
 		SessionId:     r.LocalAddress,         // sessionId用客户端4字节IP来代替
 		PayloadLength: uint16(vv.Size()),      // 数据报大小
 		TotalLength:   uint16(0),              // 暂时初始化为0，传输层中增加noise后计算总长度
 	})
+
 	// do something
 	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMMProtocolNumber, &hdr, vv)
 }

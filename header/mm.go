@@ -11,15 +11,15 @@ import (
 
 const (
 	magic         = 0
-	flag          = 4
-	seq           = 5
-	sessionId     = 9
-	payloadLength = 13
-	totalLength   = 15
+	flag          = 2
+	seq           = 3
+	sessionId     = 7
+	payloadLength = 11
+	totalLength   = 13
 )
 
 type MMFields struct {
-	Magic         uint32
+	Magic         uint16
 	Flag          byte
 	Seq           uint32
 	SessionId     global.Address
@@ -44,7 +44,7 @@ const (
 
 	MMMagic = 9999
 
-	MMMinimumSize = 12
+	MMMinimumSize = 16
 
 	MMAddressSize = 4
 
@@ -53,28 +53,28 @@ const (
 	MMProtocolNumber global.NetworkProtocolNumber = 9
 )
 
-func (b MM) Magic() uint32 {
-	return uint32(binary.BigEndian.Uint32(b[magic:]))
+func (b MM) Magic() uint16 {
+	return uint16(binary.BigEndian.Uint16(b[magic:]))
 }
 
-func (b MM) SetMagic(magic uint32) {
-	binary.BigEndian.PutUint32(b[magic:], magic)
+func (b MM) SetMagic(mg uint16) {
+	binary.BigEndian.PutUint16(b[magic:], mg)
 }
 
 func (b MM) Flag() byte {
 	return b[flag]
 }
 
-func (b MM) SetFlag(flag byte) {
-	b[flag] = flag
+func (b MM) SetFlag(fl byte) {
+	b[flag] = fl
 }
 
 func (b MM) Seq() uint32 {
 	return uint32(binary.BigEndian.Uint32(b[seq:]))
 }
 
-func (b MM) SetSeq(seq uint32) {
-	binary.BigEndian.PutUint32(b[seq:], seq)
+func (b MM) SetSeq(s uint32) {
+	binary.BigEndian.PutUint32(b[seq:], s)
 }
 
 func (b MM) SessionId() global.Address {
@@ -89,16 +89,16 @@ func (b MM) PayloadLength() uint16 {
 	return uint16(binary.BigEndian.Uint16(b[payloadLength:]))
 }
 
-func (b MM) SetPayloadLength(payloadLength uint16) {
-	binary.BigEndian.PutUint16(b[payloadLength:], payloadLength)
+func (b MM) SetPayloadLength(plLength uint16) {
+	binary.BigEndian.PutUint16(b[payloadLength:], plLength)
 }
 
 func (b MM) TotalLength() uint16 {
 	return uint16(binary.BigEndian.Uint16(b[totalLength:]))
 }
 
-func (b MM) SetTotalLength(totalLength uint16) {
-	binary.BigEndian.PutUint16(b[totalLength:], totalLength)
+func (b MM) SetTotalLength(tLength uint16) {
+	binary.BigEndian.PutUint16(b[totalLength:], tLength)
 }
 
 func (b MM) Payload() []byte {

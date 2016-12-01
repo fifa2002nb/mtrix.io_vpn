@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-
+    log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/ilist"
@@ -255,6 +255,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 		return
 	}
 
+    log.Infof("rdn recv:%v", vv)
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
 	r := makeRoute(protocol, dst, src, ref)
 	ref.ep.ReverseHandlePacket(&r, vv)

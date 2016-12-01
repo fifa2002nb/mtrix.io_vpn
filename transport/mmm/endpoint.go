@@ -536,7 +536,6 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 		e.rcvMu.Unlock()
 		return
 	}
-
 	wasEmpty := e.rcvBufSize == 0
 
 	// Push new packet into receive list and increment the buffer size.
@@ -549,10 +548,9 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	}
 	pkt.data = vv.ToViewWithExtraView(hdr.View()) // 头部和数据拼接
 	e.rcvList.PushBack(pkt)                       // push当前端口数据管道中
-	e.rcvBufSize += vv.Size()
+	e.rcvBufSize += len(pkt.data) 
 
 	e.rcvMu.Unlock()
-
 	// Notify any waiters that there's data to be read now.
 	if wasEmpty {
 		e.waiterQueue.Notify(waiter.EventIn)

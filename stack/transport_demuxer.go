@@ -6,7 +6,6 @@ package stack
 
 import (
 	"sync"
-
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 )
@@ -95,7 +94,6 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 
 	eps.mu.RLock()
 	defer eps.mu.RUnlock()
-
 	// Try to find a match with the id as provided.
 	if ep := eps.endpoints[id]; ep != nil {
 		ep.ReverseHandlePacket(r, id, hdr, vv)
@@ -115,6 +113,7 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 	nid.LocalAddress = id.LocalAddress
 	nid.RemoteAddress = ""
 	nid.RemotePort = 0
+
 	if ep := eps.endpoints[nid]; ep != nil {
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true

@@ -75,8 +75,8 @@ func main() {
 
 	defer ep.Close()
 
-	// bind to 10.1.1.2:999
-	if err := ep.Bind(global.FullAddress{1, global.Address("\x0A\x01\x01\x02"), 999}, nil); err != nil {
+	// bind to 10.1.1.2:0
+	if err := ep.Bind(global.FullAddress{1, global.Address("\x0A\x01\x01\x02"), 0}, nil); err != nil {
 		log.Fatal("Bind failed: ", err)
 	}
 
@@ -97,7 +97,7 @@ func main() {
 			return
 		}
 
-		log.Infof("rcv: %v", v)
+		log.Infof("sample recv:%v", v)
 		_, err = ep.Write(v, &remoteAddr)
 		if nil != err {
 			log.Infof("write err:%v", err)
