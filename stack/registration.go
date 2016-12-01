@@ -7,8 +7,8 @@ package stack
 import (
 	"sync"
 
-	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/buffer"
+	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/waiter"
 )
 
@@ -103,7 +103,7 @@ type NetworkEndpoint interface {
 
 	// HandlePacket is called by the link layer when new packets arrive to
 	// this network endpoint.
-	ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView)
+	ReverseHandlePacket(r *Route, vv *buffer.VectorisedView)
 }
 
 // NetworkProtocol is the interface that needs to be implemented by network
@@ -131,7 +131,7 @@ type NetworkProtocol interface {
 type NetworkDispatcher interface {
 	// DeliverNetworkPacket finds the appropriate network protocol
 	// endpoint and hands the packet over for further processing.
-	ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.NetworkProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView)
+	ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.NetworkProtocolNumber, vv *buffer.VectorisedView)
 }
 
 // LinkEndpoint is the interface implemented by data link layer protocols (e.g.,

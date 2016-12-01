@@ -200,7 +200,7 @@ func (n *NIC) RemoveAddress(addr global.Address) error {
 	return nil
 }
 
-func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.NetworkProtocolNumber, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.NetworkProtocolNumber, vv *buffer.VectorisedView) {
 	netProto, ok := n.stack.networkProtocols[protocol]
 	if !ok {
 		atomic.AddUint64(&n.stack.stats.UnknownProtocolRcvdPackets, 1)
@@ -257,7 +257,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
 	r := makeRoute(protocol, dst, src, ref)
-	ref.ep.ReverseHandlePacket(&r, hdr, vv)
+	ref.ep.ReverseHandlePacket(&r, vv)
 	ref.decRef()
 }
 
