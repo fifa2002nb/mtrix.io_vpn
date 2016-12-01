@@ -81,15 +81,13 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
-func (e *endpoint) ReverseHandlePacket(r *stack.Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 	h := header.IPv4(vv.First())
 	if !h.IsValid(vv.Size()) {
 		return
 	}
 
-	if nil == hdr {
-		*hdr = buffer.NewPrependable(int(r.MaxHeaderLength()))
-	}
+    hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
 
 	// 组装MM协议头部
 	m := header.MM(hdr.Prepend(header.MMMinimumSize))
@@ -102,7 +100,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, hdr *buffer.Prependable, 
 		TotalLength:   uint16(0),              // 暂时初始化为0，传输层中增加noise后计算总长度
 	})
 	// do something
-	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMMProtocolNumber, hdr, vv)
+	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMMProtocolNumber, &hdr, vv)
 }
 
 type protocol struct{}
