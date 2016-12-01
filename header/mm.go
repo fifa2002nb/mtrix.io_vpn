@@ -81,8 +81,8 @@ func (b MM) SessionId() global.Address {
 	return global.Address(b[sessionId : sessionId+MMAddressSize])
 }
 
-func (b MM) SetSessionId(sessionId global.Address) {
-	copy(b[sessionId:sessionId+MMAddressSize], sessionId)
+func (b MM) SetSessionId(ssid global.Address) {
+	copy(b[sessionId:sessionId+MMAddressSize], ssid)
 }
 
 func (b MM) PayloadLength() uint16 {

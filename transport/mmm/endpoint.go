@@ -143,7 +143,7 @@ func (e *endpoint) Read(addr *global.FullAddress) (buffer.View, error) {
 
 	p := e.rcvList.Front()
 	e.rcvList.Remove(p)
-	e.rcvBufSize -= p.data.Size()
+	e.rcvBufSize -= len(p.data)
 
 	e.rcvMu.Unlock()
 
@@ -151,7 +151,7 @@ func (e *endpoint) Read(addr *global.FullAddress) (buffer.View, error) {
 		*addr = p.senderAddress
 	}
 
-	return p.data.ToView(), nil
+	return p.data, nil
 }
 
 // RecvMsg implements global.RecvMsg.
@@ -524,7 +524,7 @@ func (e *endpoint) Readiness(mask waiter.EventMask) waiter.EventMask {
 	return result
 }
 
-func (e *endpoint) ReverseHandlePacket(r *Route, id TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
 	if nil == hdr {
 		return
 	}

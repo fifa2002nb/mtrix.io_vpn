@@ -57,7 +57,7 @@ func (r *Route) PseudoHeaderChecksum(protocol global.TransportProtocolNumber) ui
 }
 
 // WritePacket writes the packet through the given route.
-func (r *Route) WritePacket(hdr *buffer.Prependable, payload buffer.View, protocol global.TransportProtocolNumber) error {
+func (r *Route) WritePacket(payload buffer.View, protocol global.TransportProtocolNumber) error {
 	return r.ref.ep.WritePacket(r, payload, protocol)
 }
 

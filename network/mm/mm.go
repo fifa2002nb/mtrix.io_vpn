@@ -5,8 +5,6 @@
 package mm
 
 import (
-	"encoding/binary"
-	"math/rand"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/header"
@@ -79,17 +77,18 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 		return nil
 	}
 	// 剥掉MM协议的头部，发送数据部分
-	return e.linkEP.WritePacket(r, payload.TrimFront(header.MMMinimumSize), ProtocolNumber)
+    payload.TrimFront(header.MMMinimumSize)
+	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
-func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
+func (e *endpoint) ReverseHandlePacket(r *stack.Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
 	h := header.IPv4(vv.First())
 	if !h.IsValid(vv.Size()) {
 		return
 	}
 
 	if nil == hdr {
-		hdr = buffer.NewPrependable(int(r.MaxHeaderLength()))
+		*hdr = buffer.NewPrependable(int(r.MaxHeaderLength()))
 	}
 
 	// 组装MM协议头部
@@ -103,7 +102,7 @@ func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *bu
 		TotalLength:   uint16(0),              // 暂时初始化为0，传输层中增加noise后计算总长度
 	})
 	// do something
-	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMProtocolNumber, hdr, vv)
+	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMMProtocolNumber, hdr, vv)
 }
 
 type protocol struct{}

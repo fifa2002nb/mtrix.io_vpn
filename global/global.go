@@ -16,7 +16,7 @@
 // Stack.NewEndpoint(). Such endpoints can be used to send/receive data, connect
 // to peers, listen for connections, accept connections, etc., depending on the
 // transport protocol selected.
-package globe
+package global
 
 import (
 	"errors"

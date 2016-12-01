@@ -270,11 +270,11 @@ func (n *NIC) ReverseDeliverTransportPacket(r *Route, protocol global.TransportP
 
 	transProto := state.proto
 	// 通过随机数确定发出的端口号
-	//srcPort, dstPort, err := transProto.ParsePorts(vv.First())
+	/*srcPort, dstPort, err := transProto.ParsePorts(vv.First())
 	if err != nil {
 		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
 		return
-	}
+	}*/
 	// LocalPort uint16, LocalAddress tcpip.Address, RemotePort uint16, RemoteAddress tcpip.Address
 	id := TransportEndpointID{uint16(0), r.LocalAddress, uint16(0), r.RemoteAddress}
 	if n.demux.reverseDeliverPacket(r, protocol, hdr, vv, id) {

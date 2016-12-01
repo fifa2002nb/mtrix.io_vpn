@@ -17,9 +17,9 @@ import (
 	"mtrix.io_vpn/link/fdbased"
 	"mtrix.io_vpn/link/rawfile"
 	"mtrix.io_vpn/link/tun"
-	"mtrix.io_vpn/network/mv4"
+	"mtrix.io_vpn/network/mm"
 	"mtrix.io_vpn/stack"
-	"mtrix.io_vpn/transport/mm"
+	"mtrix.io_vpn/transport/mmm"
 	"mtrix.io_vpn/waiter"
 )
 
@@ -34,7 +34,7 @@ func main() {
 
 	// Create the stack with ip and tcp protocols, then add a tun-based
 	// NIC and address.
-	s := stack.New([]string{mv4.ProtocolName}, []string{mm.ProtocolName})
+	s := stack.New([]string{mm.ProtocolName}, []string{mmm.ProtocolName})
 
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {

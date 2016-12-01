@@ -46,7 +46,7 @@ func (*protocol) MinimumPacketSize() int {
 // ParsePorts returns the source and destination ports stored in the given udp
 // packet.
 func (*protocol) ParsePorts(v buffer.View) (src, dst uint16, err error) {
-	dst := uint16(StartPort) + uint16(rand.Intn(10000))%uint16(PortNum)
+	dst = uint16(StartPort) + uint16(rand.Intn(10000))%uint16(PortNum)
 	return 888, dst, nil
 }
 

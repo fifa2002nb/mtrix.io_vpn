@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"mtrix.io_vpn/global"
-	"mtrix.io_vpn/global/buffer"
+	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/waiter"
 )
 
