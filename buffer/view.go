@@ -30,6 +30,13 @@ func (v *View) CapLength(length int) {
 	*v = (*v)[:length:length]
 }
 
+func (v *View) Merge(ev View) View {
+	b := make([]byte, len(v)+len(ev))
+	n = copy(b, v)
+	copy(b[n:], ev)
+	return b
+}
+
 // ToVectorisedView transforms a View in a VectorisedView from an
 // already-allocated slice of View.
 func (v *View) ToVectorisedView(views [1]View) VectorisedView {

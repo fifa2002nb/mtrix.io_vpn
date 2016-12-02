@@ -14,13 +14,20 @@
 package stack
 
 import (
-	"sync"
-
+	"errors"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/ports"
 	"mtrix.io_vpn/waiter"
+	"net"
+	"sync"
 )
+
+type EndpointData struct {
+	data buffer.View
+	r    *Route
+	addr *net.UDPAddr // peer addr
+}
 
 type transportProtocolState struct {
 	proto          TransportProtocol
@@ -46,6 +53,14 @@ type Stack struct {
 	routeTable []global.Route
 
 	*ports.PortManager
+
+	// send finalPackage to updconn channel
+	// port <-> channel
+	//startPort uint16
+	//portNum   uint16
+	tmu                         sync.RWMutex
+	ToNetChan                   chan *EndpointData
+	ConnectedTransportEndpoints map[[6]byte]global.endpoint
 }
 
 // New allocates a new networking stack with only the requested networking and
@@ -56,6 +71,10 @@ func New(network []string, transport []string) global.Stack {
 		networkProtocols:   make(map[global.NetworkProtocolNumber]NetworkProtocol),
 		nics:               make(map[global.NICID]*NIC),
 		PortManager:        ports.NewPortManager(),
+		ToNetChan:          make(chan *EndpointData, 2048), // fixed
+		//startPort:          uint16(40000),                 // fixed
+		//portNum:            uint16(1),                     // fixed
+		ConnectedTransportEndpoints: make(map[[6]byte]global.endpoint),
 	}
 
 	// Add specified network protocols.
@@ -319,6 +338,43 @@ func (s *Stack) SetPromiscuousMode(nicID global.NICID, enable bool) error {
 	nic.setPromiscuousMode(enable)
 
 	return nil
+}
+
+// for udpconn
+/*func (s *Stack) RegisterDataChan(uint16 port, dc chan *EndpointData) error {
+	if s.startPort > port || s.startPort+portNum <= port {
+		return errors.New("port not allowed.")
+	}
+	if nil == dc {
+		return errors.New("endpointdata channel invalided.")
+	}
+	s.tmu.RLock()
+	defer s.tmu.RUnlock()
+
+	s.toNetChan[port-s.startPort] = dc
+	return nil
+}*/
+
+// for udpconn
+func (s *Stack) RegisterConnectedTransportEndpoint(ep global.endpoint) error {
+	if nil == ep.GetNetAddr() {
+		return errors.New("nil == ep.GetAddr()")
+	}
+	s.tmu.RLock()
+	defer s.tmu.RUnlock()
+
+	s.ConnectedTransportEndpoints[s.NetAddrHash(ep.GetNetAddr())] = ep
+	return nil
+}
+
+// for udpconn
+func (s *Stack) NetAddrHash(a *net.UDPAddr) [6]byte {
+	var b [6]byte
+	copy(b[:4], []byte(a.IP)[:4])
+	p := uint16(a.Port)
+	b[4] = byte((p >> 8) & 0xFF)
+	b[5] = byte(p & 0xFF)
+	return b
 }
 
 // RegisterTransportEndpoint registers the given endpoint with the stack

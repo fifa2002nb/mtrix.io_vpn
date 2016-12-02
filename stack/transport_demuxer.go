@@ -5,9 +5,9 @@
 package stack
 
 import (
-	"sync"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
+	"sync"
 )
 
 type protocolIDs struct {

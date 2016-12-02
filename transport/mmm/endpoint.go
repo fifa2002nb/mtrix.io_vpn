@@ -548,7 +548,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	}
 	pkt.data = vv.ToViewWithExtraView(hdr.View()) // 头部和数据拼接
 	e.rcvList.PushBack(pkt)                       // push当前端口数据管道中
-	e.rcvBufSize += len(pkt.data) 
+	e.rcvBufSize += len(pkt.data)
 
 	e.rcvMu.Unlock()
 	// Notify any waiters that there's data to be read now.
