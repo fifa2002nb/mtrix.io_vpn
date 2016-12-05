@@ -203,7 +203,7 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 
 	n.isRegistered = true
 	n.state = stateConnected
-	n.udpAddr = s.udpAddr
+	n.addr = s.udpAddr
 	// Create sender and receiver.
 	n.snd = newSender(n, iss, s.window, mss)
 	n.rcv = newReceiver(n, irs, l.rcvWnd)
@@ -280,7 +280,7 @@ func (e *endpoint) handleListenSegment(ctx *listenContext, s *segment) {
 			go e.handleSynSegment(ctx, s, mss)
 		} else {
 			cookie := ctx.createCookie(s.id, s.sequenceNumber, encodeMSS(mss))
-			sendSynTCP(&s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd)
+			sendSynTCP(e.stack, e.addr, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd)
 		}
 
 	case flagAck:

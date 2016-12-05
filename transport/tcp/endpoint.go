@@ -158,7 +158,7 @@ func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, wait
 	}
 }
 
-func (e *endpoint) SetNetAddr(addr *netUDPAddr) {
+func (e *endpoint) SetNetAddr(addr *net.UDPAddr) {
 	e.addr = addr
 }
 
@@ -353,6 +353,10 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	}
 }
 
+func (e *endpoint) Write(v buffer.View, to *global.FullAddress) (uintptr, error) {
+    return uintptr(0), nil
+}
+
 // Write writes data to the endpoint's peer.
 func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, error) {
 	if to != nil {
@@ -374,7 +378,7 @@ func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, e
 
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&e.route, e.id, &vv, e.udpAddr)
+	s := newSegment(&e.route, e.id, &vv, e.addr)
 
 	e.sndBufMu.Lock()
 
@@ -415,7 +419,7 @@ func (e *endpoint) SendMsg(v buffer.View, c global.ControlMessages, to *global.F
 		// global.ErrInvalidEndpointState turns into syscall.EINVAL.
 		return 0, global.ErrInvalidEndpointState
 	}
-	return e.Write(v, to)
+	return e.WriteToNet(v, to)
 }
 
 // Peek reads data without consuming it from the endpoint.
@@ -951,11 +955,11 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 func (e *endpoint) WriteToInterface() error {
 	waitEntry, notifyCh := waiter.NewChannelEntry(nil)
 	e.waiterQueue.EventRegister(&waitEntry, waiter.EventIn)
-	defer wq.EventUnregister(&waitEntry)
+	defer e.waiterQueue.EventUnregister(&waitEntry)
 	for {
 		v, err := e.Read(nil)
 		if err != nil {
-			if err == tcpip.ErrWouldBlock {
+			if err == global.ErrWouldBlock {
 				<-notifyCh
 				continue
 			}

@@ -58,7 +58,7 @@ func (*protocol) ParsePorts(v buffer.View) (src, dst uint16, err error) {
 // a reset is sent in response to any incoming segment except another reset. In
 // particular, SYNs addressed to a non-existent connection are rejected by this
 // means."
-func (*protocol) HandleUnknownDestinationPacket(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView) {
+func (*protocol) HandleUnknownDestinationPacket(stack *stack.Stack, r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView) {
 	s := newSegment(r, id, vv, nil)
 	defer s.decRef()
 
@@ -72,11 +72,11 @@ func (*protocol) HandleUnknownDestinationPacket(r *stack.Route, id stack.Transpo
 		return
 	}
 
-	replyWithReset(s)
+	replyWithReset(stack, s)
 }
 
 // replyWithReset replies to the given segment with a reset segment.
-func replyWithReset(s *segment) {
+func replyWithReset(stack *stack.Stack, s *segment) {
 	// Get the seqnum from the packet if the ack flag is set.
 	seq := seqnum.Value(0)
 	if s.flagIsSet(flagAck) {
@@ -85,7 +85,7 @@ func replyWithReset(s *segment) {
 
 	ack := s.sequenceNumber.Add(s.logicalLen())
 
-	sendTCP(&s.route, s.id, nil, flagRst|flagAck, seq, ack, 0)
+	sendTCP(stack, s.udpAddr, &s.route, s.id, nil, flagRst|flagAck, seq, ack, 0)
 }
 
 func init() {

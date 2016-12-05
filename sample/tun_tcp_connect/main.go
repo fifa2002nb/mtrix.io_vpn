@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
 	"mtrix.io_vpn/global"
+    "mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/link/fdbased"
 	"mtrix.io_vpn/link/rawfile"
 	"mtrix.io_vpn/link/tun"
@@ -21,9 +22,10 @@ import (
 	"mtrix.io_vpn/waiter"
 	"os"
 	"time"
+    "net"
 )
 
-func connectToNet(clientEP *global.Endpoint, s *stack.Stack, server string, port uint16) error {
+func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port uint16) error {
 	ipport := fmt.Sprintf("%v:%v", server, port)
 	udpAddr, err := net.ResolveUDPAddr("udp", ipport)
 	if err != nil {
@@ -37,15 +39,15 @@ func connectToNet(clientEP *global.Endpoint, s *stack.Stack, server string, port
 	}
 	go func() {
 		for {
-			packet := <-s.ToNetChan
-			udpConn.Write(packet.data)
+			packet := s.GetPacket()
+			udpConn.Write(packet.Data)
 		}
 	}()
 
 	// wait for udp packets
 	for {
 		buf := make([]byte, 2048)
-		plen, addr, err := udpConn.ReadFromUDP(buf)
+		plen, _, err := udpConn.ReadFromUDP(buf)
 		if nil != err {
 			log.Errorf("%v", err)
 		} else {

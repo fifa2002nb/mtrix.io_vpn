@@ -5,6 +5,7 @@
 package mmm
 
 import (
+    "net"
 	"errors"
 	"io"
 	"mtrix.io_vpn/buffer"
@@ -66,6 +67,8 @@ type endpoint struct {
 	// IPv4 when IPv6 endpoint is bound or connected to an IPv4 mapped
 	// address).
 	effectiveNetProtos []global.NetworkProtocolNumber
+
+    addr *net.UDPAddr
 }
 
 func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, waiterQueue *waiter.Queue) *endpoint {
@@ -98,6 +101,10 @@ func NewConnectedEndpoint(stack *stack.Stack, r *stack.Route, id stack.Transport
 	ep.state = stateConnected
 
 	return ep, nil
+}
+
+func (e *endpoint) GetNetAddr() *net.UDPAddr {
+	return e.addr
 }
 
 // Close puts the endpoint in a closed state and frees all resources
@@ -248,6 +255,14 @@ func (e *endpoint) Write(v buffer.View, to *global.FullAddress) (uintptr, error)
 	}
 	sendMMM(route, v, e.id.LocalPort, dstPort)
 	return uintptr(len(v)), nil
+}
+
+func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, error) {
+   return uintptr(0), nil 
+}
+
+func (e *endpoint) WriteToInterface() error {
+    return nil
 }
 
 // SendMsg implements global.SendMsg.
@@ -523,6 +538,8 @@ func (e *endpoint) Readiness(mask waiter.EventMask) waiter.EventMask {
 
 	return result
 }
+
+func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {}
 
 func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpointID, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
 	if nil == hdr {

@@ -9,9 +9,11 @@ package main
 
 import (
 	"fmt"
+    "net"
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
 	"mtrix.io_vpn/global"
+    "mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/link/fdbased"
 	"mtrix.io_vpn/link/rawfile"
 	"mtrix.io_vpn/link/tun"
@@ -23,7 +25,7 @@ import (
 	"time"
 )
 
-func hearFromNet(listenEP *global.Endpoint, s *stack.Stack, server string, port uint16) error {
+func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port uint16) error {
 	ipport := fmt.Sprintf("%v:%v", server, port)
 	udpAddr, err := net.ResolveUDPAddr("udp", ipport)
 	if err != nil {
@@ -35,12 +37,10 @@ func hearFromNet(listenEP *global.Endpoint, s *stack.Stack, server string, port 
 		log.Errorf("Failed to connect udp port %v:%v", port, err)
 		return err
 	}
-	//udpChan := make(chan *EndpointData, 1000)
-	//s.RegisterDataChan(port, udpChan) // 注册数据管道
 	go func() {
 		for {
-			packet := <-s.ToNetChan
-			udpConn.WriteTo(packet.data, packet.addr)
+			packet := s.GetPacket()
+			udpConn.WriteTo(packet.Data, packet.Addr)
 		}
 	}()
 
@@ -52,13 +52,14 @@ func hearFromNet(listenEP *global.Endpoint, s *stack.Stack, server string, port 
 			log.Errorf("%v", err)
 		} else {
 			hash := s.NetAddrHash(addr)
-			if ep, ok := s.ConnectedTransportEndpoints[hash]; ok { //数据传输
-				ep.HandlePacket(buffer.View(buf[:plen]), nil)
+			if ep, err := s.GetConnectedTransportEndpointByHash(hash); nil == err { //数据传输
+				(*ep).HandlePacket(buffer.View(buf[:plen]), nil)
 			} else { //建立连接
 				listenEP.HandlePacket(buffer.View(buf[:plen]), addr)
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -129,9 +130,9 @@ func main() {
 
 	go func() {
 		for {
-			n, wq, err := listenEP.Accept()
+			n, _, err := listenEP.Accept()
 			if err != nil {
-				if err == tcpip.ErrWouldBlock {
+				if err == global.ErrWouldBlock {
 					<-notifyCh
 					continue
 				}
@@ -139,7 +140,9 @@ func main() {
 			} else {
 				if err := s.RegisterConnectedTransportEndpoint(n); nil != err {
 					log.Fatal("register connnected transport endpoint failed. err:%v", err)
-				}
+				} else {
+                    go n.WriteToInterface()
+                }
 			}
 		}
 	}()

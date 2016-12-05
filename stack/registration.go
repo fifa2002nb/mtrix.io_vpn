@@ -6,7 +6,6 @@ package stack
 
 import (
 	"sync"
-
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/waiter"
@@ -65,7 +64,7 @@ type TransportProtocol interface {
 	// HandleUnknownDestinationPacket handles packets targeted at this
 	// protocol but that don't match any existing endpoint. For example,
 	// it is targeted at a port that have no listeners.
-	HandleUnknownDestinationPacket(r *Route, id TransportEndpointID, vv *buffer.VectorisedView)
+	HandleUnknownDestinationPacket(s *Stack, r *Route, id TransportEndpointID, vv *buffer.VectorisedView)
 }
 
 // TransportDispatcher contains the methods used by the network stack to deliver

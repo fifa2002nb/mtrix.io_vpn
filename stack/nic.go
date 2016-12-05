@@ -291,7 +291,7 @@ func (n *NIC) ReverseDeliverTransportPacket(r *Route, protocol global.TransportP
 			return
 		}
 	}
-	transProto.HandleUnknownDestinationPacket(r, id, vv)
+	transProto.HandleUnknownDestinationPacket(n.stack, r, id, vv)
 }
 
 // ID returns the identifier of n.

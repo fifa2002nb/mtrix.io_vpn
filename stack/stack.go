@@ -15,6 +15,7 @@ package stack
 
 import (
 	"errors"
+    "fmt"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/ports"
@@ -22,12 +23,6 @@ import (
 	"net"
 	"sync"
 )
-
-type EndpointData struct {
-	data buffer.View
-	r    *Route
-	addr *net.UDPAddr // peer addr
-}
 
 type transportProtocolState struct {
 	proto          TransportProtocol
@@ -59,8 +54,8 @@ type Stack struct {
 	//startPort uint16
 	//portNum   uint16
 	tmu                         sync.RWMutex
-	ToNetChan                   chan *EndpointData
-	ConnectedTransportEndpoints map[[6]byte]global.endpoint
+	ToNetChan                   chan *global.EndpointData
+	ConnectedTransportEndpoints map[[6]byte]global.Endpoint
 }
 
 // New allocates a new networking stack with only the requested networking and
@@ -71,10 +66,10 @@ func New(network []string, transport []string) global.Stack {
 		networkProtocols:   make(map[global.NetworkProtocolNumber]NetworkProtocol),
 		nics:               make(map[global.NICID]*NIC),
 		PortManager:        ports.NewPortManager(),
-		ToNetChan:          make(chan *EndpointData, 2048), // fixed
+		ToNetChan:          make(chan *global.EndpointData, 2048), // fixed
 		//startPort:          uint16(40000),                 // fixed
 		//portNum:            uint16(1),                     // fixed
-		ConnectedTransportEndpoints: make(map[[6]byte]global.endpoint),
+		ConnectedTransportEndpoints: make(map[[6]byte]global.Endpoint),
 	}
 
 	// Add specified network protocols.
@@ -104,6 +99,10 @@ func New(network []string, transport []string) global.Stack {
 
 	return s
 }
+
+func (s *Stack) GetPacket() *global.EndpointData {
+    return <-s.ToNetChan
+} 
 
 // SetTransportProtocolHandler sets the per-stack default handler for the given
 // protocol.
@@ -356,7 +355,7 @@ func (s *Stack) SetPromiscuousMode(nicID global.NICID, enable bool) error {
 }*/
 
 // for udpconn
-func (s *Stack) RegisterConnectedTransportEndpoint(ep global.endpoint) error {
+func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
 	if nil == ep.GetNetAddr() {
 		return errors.New("nil == ep.GetAddr()")
 	}
@@ -376,6 +375,15 @@ func (s *Stack) NetAddrHash(a *net.UDPAddr) [6]byte {
 	b[5] = byte(p & 0xFF)
 	return b
 }
+
+// for udpconn
+func (s *Stack) GetConnectedTransportEndpointByHash(hash [6]byte) (*global.Endpoint, error) {
+    if ep, ok := s.ConnectedTransportEndpoints[hash]; ok {
+        return &ep, nil
+    } else {
+        return nil, errors.New(fmt.Sprintf("connection %v does not existed.", hash))
+    }
+} 
 
 // RegisterTransportEndpoint registers the given endpoint with the stack
 // transport dispatcher. Received packets that match the provided id will be

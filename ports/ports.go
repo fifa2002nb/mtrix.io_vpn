@@ -61,7 +61,7 @@ func (s *PortManager) PickEphemeralPort(testPort func(p uint16) (bool, error)) (
 // ReservePort marks a port as reserved so that it cannot be reserved by another
 // endpoint. If port is zero, ReservePort will search for an unreserved
 // ephemeral port and reserve it, returning its value in the "port" return value.
-func (s *PortManager) ReservePort(network []global.NetworkProtocolNumber, transport global.TransportProtocolNumber, port uint16) (reservedPort uint16, err error) {
+func (s *PortManager) ReservePort(network []global.NetworkProtocolNumber, transport global.TransportProtocolNumber, addr global.Address, port uint16) (reservedPort uint16, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -102,7 +102,7 @@ func (s *PortManager) reserveSpecificPort(network []global.NetworkProtocolNumber
 
 // ReleasePort releases the reservation on a port so that it can be reserved by
 // other endpoints.
-func (s *PortManager) ReleasePort(network []global.NetworkProtocolNumber, transport global.TransportProtocolNumber, port uint16) {
+func (s *PortManager) ReleasePort(network []global.NetworkProtocolNumber, transport global.TransportProtocolNumber, addr global.Address, port uint16) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

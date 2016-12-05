@@ -6,6 +6,7 @@ package tcp
 
 import (
 	"sync/atomic"
+    "net"
 
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/header"
@@ -46,11 +47,12 @@ type segment struct {
 	udpAddr        *net.UDPAddr
 }
 
-func newSegment(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView) *segment {
+func newSegment(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView, addr *net.UDPAddr) *segment {
 	s := &segment{
 		refCnt: 1,
 		id:     id,
 		route:  r.Clone(),
+        udpAddr: addr,
 	}
 	s.data = vv.Clone(s.views[:])
 	return s

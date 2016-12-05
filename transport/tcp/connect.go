@@ -7,6 +7,7 @@ package tcp
 import (
 	"crypto/rand"
 	"time"
+    "net"
 
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
@@ -293,7 +294,7 @@ func sendSynTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Tran
 		header.TCPOptionMSS, 4, byte(mss >> 8), byte(mss),
 	}
 
-	return sendTCPWithOptions(s, r, addr, id, nil, flags, seq, ack, rcvWnd, options)
+	return sendTCPWithOptions(s, addr, r, id, nil, flags, seq, ack, rcvWnd, options)
 }
 
 // sendTCPWithOptions sends a TCP segment with the provided options via the
@@ -330,8 +331,12 @@ func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id st
 
 	//return r.WritePacket(&hdr, data, ProtocolNumber)
 	//p := uint16(rand.Intn(s.portNum)) // rand port
-	d := hdr.View().Merge(data)
-	s.ToNetChan <- &stack.EndpointData{d, r, addr}
+    hview := hdr.View()
+	d := hview.Merge(data)
+	s.ToNetChan <- &global.EndpointData{
+        Data:d, 
+        Addr:addr,
+    }
 	return nil
 }
 
@@ -368,8 +373,12 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Transpo
 
 	//return r.WritePacket(&hdr, data, ProtocolNumber)
 	//p := uint16(rand.Intn(s.portNum)) // rand port
-	d := hdr.View().Merge(data)
-	s.ToNetChan <- &stack.EndpointData{d, r, addr}
+    hview := hdr.View()
+	d := hview.Merge(data)
+	s.ToNetChan <- &global.EndpointData{
+        Data: d, 
+        Addr: addr,
+    }
 	return nil
 }
 

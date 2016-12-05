@@ -31,8 +31,8 @@ func (v *View) CapLength(length int) {
 }
 
 func (v *View) Merge(ev View) View {
-	b := make([]byte, len(v)+len(ev))
-	n = copy(b, v)
+	b := make([]byte, len(*v)+len(ev))
+	n := copy(b, *v)
 	copy(b[n:], ev)
 	return b
 }
