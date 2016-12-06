@@ -371,6 +371,7 @@ func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
 	defer s.tmu.RUnlock()
 
 	s.ConnectedTransportEndpoints[s.NetAddrHash(ep.GetNetAddr())] = ep
+
 	return nil
 }
 

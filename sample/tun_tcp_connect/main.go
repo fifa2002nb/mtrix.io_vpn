@@ -47,11 +47,11 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 	// wait for udp packets
 	for {
 		buf := make([]byte, 2048)
-		plen, _, err := udpConn.ReadFromUDP(buf)
+		plen, udpAddr, err := udpConn.ReadFromUDP(buf)
 		if nil != err {
 			log.Errorf("%v", err)
 		} else {
-			clientEP.HandlePacket(buffer.View(buf[:plen]), nil)
+			clientEP.HandlePacket(buffer.View(buf[:plen]), udpAddr)
 		}
 	}
 	return nil
@@ -104,15 +104,21 @@ func main() {
 	var wq waiter.Queue
 	connectEP, err := s.NewEndpoint(tcp.ProtocolNumber, mm.ProtocolNumber, &wq)
 	if err != nil {
-		log.Fatal(err)
+		log.Infof("%v", err)
 	}
 
 	defer connectEP.Close()
 
 	// connect to 10.1.1.2:0
-	if err := connectEP.Connect(global.FullAddress{1, global.Address("\x0A\x01\x01\x02"), 0}); err != nil {
-		log.Fatal("connect failed: ", err)
+    addrName := "115.29.175.52"
+    srv := net.ParseIP(addrName)
+    if err := s.AddAddress(1, mm.ProtocolNumber, global.Address(srv.To4())); err != nil {
+		log.Infof("%v", err)
 	}
 
-	connectToNet(connectEP, s, "127.0.0.1", 40000)
+	if err := connectEP.Connect(global.FullAddress{1, global.Address(srv.To4()), 0}); err != nil {
+		log.Infof("%v", err)
+	}
+
+	connectToNet(connectEP, s, addrName, 40000)
 }

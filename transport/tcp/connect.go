@@ -212,7 +212,7 @@ func (h *handshake) execute() error {
 
 	// Send the initial SYN segment and loop until the handshake is
 	// completed.
-    log.Infof("[excute] send syn tcp to %v", h.ep.addr)
+    log.Infof("[execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
 	sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd)
 	for h.state != handshakeCompleted {
 		select {
@@ -222,16 +222,18 @@ func (h *handshake) execute() error {
 				return global.ErrTimeout
 			}
 			rt.Reset(timeOut)
+            log.Infof("[execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
 			sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd)
 
 		case s := <-h.ep.segmentChan:
-            log.Infof("[excute] recv segment:%v", s)
 			h.sndWnd = s.window
 			var err error
 			switch h.state {
 			case handshakeSynRcvd:
+                log.Infof("[execute] synRcvd flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
 				err = h.synRcvdState(s)
 			case handshakeSynSent:
+                log.Infof("[execute] synSent flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
 				err = h.synSentState(s)
 			}
 			s.decRef()

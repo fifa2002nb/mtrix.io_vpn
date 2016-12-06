@@ -201,10 +201,15 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 		n.Close()
 		return nil, err
 	}
+    
+    n.addr = s.udpAddr
+    if err := l.stack.RegisterConnectedTransportEndpoint(n); nil != err {
+        n.Close()
+        return nil, err
+    }
 
 	n.isRegistered = true
 	n.state = stateConnected
-	n.addr = s.udpAddr
 	// Create sender and receiver.
 	n.snd = newSender(n, iss, s.window, mss)
 	n.rcv = newReceiver(n, irs, l.rcvWnd)
@@ -324,7 +329,7 @@ func (e *endpoint) protocolListenLoop(rcvWnd seqnum.Size) error {
 	for {
 		select {
 		case s := <-e.segmentChan:
-			log.Infof("recv segment route:%v", s.route)
+			log.Infof("recv flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
 			e.handleListenSegment(ctx, s)
 			s.decRef()
 

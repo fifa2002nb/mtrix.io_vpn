@@ -53,7 +53,7 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 		} else {
 			hash := s.NetAddrHash(addr)
 			if ep, err := s.GetConnectedTransportEndpointByHash(hash); nil == err { //数据传输
-				(*ep).HandlePacket(buffer.View(buf[:plen]), nil)
+				(*ep).HandlePacket(buffer.View(buf[:plen]), addr)
 			} else { //建立连接
 				listenEP.HandlePacket(buffer.View(buf[:plen]), addr)
 			}
@@ -138,11 +138,7 @@ func main() {
 				}
 				log.Fatal("Accept() failed:", err)
 			} else {
-				if err := s.RegisterConnectedTransportEndpoint(n); nil != err {
-					log.Fatal("register connnected transport endpoint failed. err:%v", err)
-				} else {
-					go n.WriteToInterface() // 注册成功则开始监听并写入数据到interface
-				}
+				go n.WriteToInterface() // 注册成功则开始监听并写入数据到interface
 			}
 		}
 	}()

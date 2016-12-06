@@ -939,7 +939,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 	remote := global.Address(udpAddr.IP.To4())
 	route, err := e.stack.FindRoute(e.boundNICID, e.id.LocalAddress, remote, header.MMProtocolNumber)
 	if nil != err {
-		log.Errorf("didn't found any matched route. err:%v.", err)
+        log.Errorf("didn't found any matched route:{local:%v remote:%v}. err:%v.", err, e.id.LocalAddress, remote)
 		return
 	}
 	var views [1]buffer.View
@@ -964,6 +964,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 }
 
 func (e *endpoint) WriteToInterface() error {
+    log.Infof("Now %v interfaceWriter running.", e.route)
 	waitEntry, notifyCh := waiter.NewChannelEntry(nil)
 	e.waiterQueue.EventRegister(&waitEntry, waiter.EventIn)
 	defer e.waiterQueue.EventUnregister(&waitEntry)
