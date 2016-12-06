@@ -7,7 +7,6 @@ package tcp
 import (
 	"net"
 	"sync/atomic"
-
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/seqnum"
@@ -104,8 +103,10 @@ func (s *segment) logicalLen() seqnum.Size {
 // segment from the TCP header stored in the data. It then updates the view to
 // skip the data. Returns boolean indicating if the parsing was successful.
 func (s *segment) parse() bool {
+	if header.TCPMinimumSize > s.data.Size() {
+	    return false;	
+	}	
 	h := header.TCP(s.data.First())
-
 	// h is the header followed by the payload. We check that the offset to
 	// the data respects the following constraints:
 	// 1. That it's at least the minimum header size; if we don't do this

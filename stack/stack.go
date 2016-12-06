@@ -254,9 +254,13 @@ func (s *Stack) FindRoute(id global.NICID, localAddr, remoteAddr global.Address,
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if _, err := nic.refIfNotExistedCreateOne(netProto, remoteAddr); nil != err {
-		return Route{}, global.ErrNoRoute
-	}
+    if nic, ok := s.nics[id]; !ok {
+        return Route{}, errors.New(fmt.Sprintf("nic:%v not existed.", id)) 
+    } else {
+        if _, err := nic.refIfNotExistedCreateOne(netProto, remoteAddr); nil != err {
+            return Route{}, err 
+        }
+    }
 
 	for i := range s.routeTable {
 		if id != 0 && id != s.routeTable[i].NIC || !s.routeTable[i].Match(remoteAddr) {

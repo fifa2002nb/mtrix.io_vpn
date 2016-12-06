@@ -12,11 +12,12 @@ import (
 	"io"
 	"sync"
 	"time"
-
+	
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/seqnum"
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/waiter"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -282,7 +283,6 @@ func (e *endpoint) handleListenSegment(ctx *listenContext, s *segment) {
 			cookie := ctx.createCookie(s.id, s.sequenceNumber, encodeMSS(mss))
 			sendSynTCP(e.stack, e.addr, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd)
 		}
-
 	case flagAck:
 		if data, ok := ctx.isCookieValid(s.id, s.ackNumber-1, s.sequenceNumber-1); ok && int(data) < len(mssTable) {
 			// Place new endpoint in accepted channel and notify
@@ -323,6 +323,7 @@ func (e *endpoint) protocolListenLoop(rcvWnd seqnum.Size) error {
 	for {
 		select {
 		case s := <-e.segmentChan:
+			log.Infof("recv segment route:%v", s.route)
 			e.handleListenSegment(ctx, s)
 			s.decRef()
 

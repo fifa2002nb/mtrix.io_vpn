@@ -939,7 +939,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 	remote := global.Address(udpAddr.IP.To4())
 	route, err := e.stack.FindRoute(e.boundNICID, e.id.LocalAddress, remote, header.MMProtocolNumber)
 	if nil != err {
-		log.Errorf("do not find any matched route:%v.", route)
+		log.Errorf("didn't found any matched route. err:%v.", err)
 		return
 	}
 	var views [1]buffer.View
