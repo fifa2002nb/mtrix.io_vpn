@@ -15,6 +15,7 @@ import (
 	"mtrix.io_vpn/seqnum"
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/waiter"
+    log "github.com/Sirupsen/logrus"
 )
 
 type handshakeState int
@@ -211,6 +212,7 @@ func (h *handshake) execute() error {
 
 	// Send the initial SYN segment and loop until the handshake is
 	// completed.
+    log.Infof("[excute] send syn tcp to %v", h.ep.addr)
 	sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd)
 	for h.state != handshakeCompleted {
 		select {
@@ -223,6 +225,7 @@ func (h *handshake) execute() error {
 			sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd)
 
 		case s := <-h.ep.segmentChan:
+            log.Infof("[excute] recv segment:%v", s)
 			h.sndWnd = s.window
 			var err error
 			switch h.state {

@@ -220,6 +220,7 @@ func (l *listenContext) createEndpointAndPerformHandshake(s *segment, mss uint16
 	cookie := l.createCookie(s.id, irs, encodeMSS(mss))
 	ep, err := l.createConnectedEndpoint(s, cookie, irs, mss)
 	if err != nil {
+        log.Errorf("createConnectedEndpoint err:%v", err)
 		return nil, err
 	}
 

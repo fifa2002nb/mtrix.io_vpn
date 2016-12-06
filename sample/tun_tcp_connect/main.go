@@ -87,7 +87,7 @@ func main() {
 
 	// add default networkEndpoint 10.1.1.2
 	if err := s.AddAddress(1, mm.ProtocolNumber, global.Address("\x0A\x01\x01\x02")); err != nil {
-		log.Fatal(err)
+		log.Infof("%v", err)
 	}
 
 	// Add default route. 10.1.1.0/24

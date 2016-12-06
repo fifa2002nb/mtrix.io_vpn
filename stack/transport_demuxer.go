@@ -8,6 +8,7 @@ import (
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"sync"
+    log "github.com/Sirupsen/logrus"
 )
 
 type protocolIDs struct {
@@ -46,6 +47,7 @@ func newTransportDemuxer(stack *Stack) *transportDemuxer {
 // registerEndpoint registers the given endpoint with the dispatcher such that
 // packets that match the endpoint ID are delivered to it.
 func (d *transportDemuxer) registerEndpoint(netProtos []global.NetworkProtocolNumber, protocol global.TransportProtocolNumber, id TransportEndpointID, ep TransportEndpoint) error {
+    log.Infof("registerEndpoint with id:%v", id)
 	for i, n := range netProtos {
 		if err := d.singleRegisterEndpoint(n, protocol, id, ep); err != nil {
 			d.unregisterEndpoint(netProtos[:i], protocol, id)

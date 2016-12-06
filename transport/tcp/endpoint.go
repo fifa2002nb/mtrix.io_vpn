@@ -944,7 +944,8 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 	}
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&route, e.id, &vv, udpAddr)
+    id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
+	s := newSegment(&route, id, &vv, udpAddr)
 	if !s.parse() {
 		// TODO: Inform the stack that the packet is malformed.
 		s.decRef()
