@@ -9,6 +9,7 @@ import (
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/stack"
+    log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -73,11 +74,13 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 	// 取MM协议头部
 	m := header.MM(payload)
 	// 做一些MM协议的验证
-	if header.MM_FLG_DAT != m.Flag() || m.PayloadLength() >= m.TotalLength() {
-		return nil
+	if header.MM_FLG_DAT != m.Flag() || m.PayloadLength() > m.TotalLength() {
+        log.Errorf("flag: %v!=%v and len: %v>=%v", header.MM_FLG_DAT, m.Flag(), m.PayloadLength(), m.TotalLength())
+		//return nil
 	}
 	// 剥掉MM协议的头部，发送数据部分
     payload.TrimFront(header.MMMinimumSize)
+    log.Infof("[WritePacket] %v", payload)
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
@@ -98,11 +101,11 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 		Seq:           uint32(0),              // 暂时初始化为0
 		SessionId:     r.LocalAddress,         // sessionId用客户端4字节IP来代替
 		PayloadLength: uint16(vv.Size()),      // 数据报大小
-		TotalLength:   uint16(0),              // 暂时初始化为0，传输层中增加noise后计算总长度
+		TotalLength:   uint16(vv.Size()),              // 暂时初始化为0，传输层中增加noise后计算总长度
 	})
 
 	// do something
-	e.dispatcher.ReverseDeliverTransportPacket(r, header.MMMProtocolNumber, &hdr, vv)
+	e.dispatcher.ReverseDeliverTransportPacket(r, header.TCPProtocolNumber, &hdr, vv)
 }
 
 type protocol struct{}

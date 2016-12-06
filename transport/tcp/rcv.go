@@ -6,7 +6,6 @@ package tcp
 
 import (
 	"container/heap"
-
 	"mtrix.io_vpn/seqnum"
 )
 
@@ -103,7 +102,6 @@ func (r *receiver) consumeSegment(s *segment, segSeq seqnum.Value, segLen seqnum
 			s.sequenceNumber.UpdateForward(diff)
 			s.data.TrimFront(int(diff))
 		}
-
 		// Move segment to ready-to-deliver list. Wakeup any waiters.
 		r.ep.readyToRead(s)
 
@@ -151,7 +149,6 @@ func (r *receiver) handleRcvdSegment(s *segment) {
 
 	segLen := seqnum.Size(s.data.Size())
 	segSeq := s.sequenceNumber
-
 	// If the sequence number range is outside the acceptable range, just
 	// send an ACK. This is according to RFC 793, page 37.
 	if !r.acceptable(segSeq, segLen) {
@@ -196,7 +193,7 @@ func (r *receiver) handleRcvdSegment(s *segment) {
 		r.pendingBufUsed -= s.logicalLen()
 		s.decRef()
 	}
-
+    
 	// Send a potentially delayed ACK if the receive window changed. If the
 	// receive send was closed, we have already sent an immediate ACK, so
 	// there is no need to send another one.

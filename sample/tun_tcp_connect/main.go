@@ -93,8 +93,8 @@ func main() {
 	// Add default route. 10.1.1.0/24
 	s.SetRouteTable([]global.Route{
 		{
-			Destination: global.Address("\x0A\x01\x01\x00"), // 10.1.1.0
-			Mask:        global.Address("\xFF\xFF\xFF\x00"), // 255.255.255.0
+			Destination: global.Address("\x00\x00\x00\x00"), // 10.1.1.0
+			Mask:        global.Address("\x00\x00\x00\x00"), // 255.255.255.0
 			Gateway:     "",
 			NIC:         1,
 		},

@@ -680,34 +680,14 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 
 	netProtos := []global.NetworkProtocolNumber{netProto}
 	e.id.LocalAddress = r.LocalAddress
-	e.id.RemoteAddress = addr.Addr
-	e.id.RemotePort = addr.Port
+    e.id.LocalPort = 0
+	//e.id.RemoteAddress = addr.Addr
+	//e.id.RemotePort = addr.Port
 
-	if e.id.LocalPort != 0 {
-		// The endpoint is bound to a port, attempt to register it.
-		err := e.stack.RegisterTransportEndpoint(nicid, netProtos, ProtocolNumber, e.id, e)
-		if err != nil {
-			return err
-		}
-	} else {
-		// The endpoint doesn't have a local port yet, so try to get
-		// one.
-		_, err := e.stack.PickEphemeralPort(func(p uint16) (bool, error) {
-			e.id.LocalPort = p
-			err := e.stack.RegisterTransportEndpoint(nicid, netProtos, ProtocolNumber, e.id, e)
-			switch err {
-			case nil:
-				return true, nil
-			case global.ErrDuplicateAddress:
-				return false, nil
-			default:
-				return false, err
-			}
-		})
-		if err != nil {
-			return err
-		}
-	}
+    // The endpoint is bound to a port, attempt to register it.
+    if err := e.stack.RegisterTransportEndpoint(nicid, netProtos, ProtocolNumber, e.id, e); err != nil {
+        return err
+    }
 
 	// Remove the port reservation. This can happen when Bind is called
 	// before Connect: in such a case we don't want to hold on to
@@ -933,6 +913,7 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
+    log.Infof("[HandlePacket] %v", v)
 	if nil == udpAddr {
 		return
 	}
@@ -952,7 +933,6 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 		e.stack.RemoveAddress(e.boundNICID, remote)
 		return
 	}
-
 	// Send packet to worker goroutine.
 	select {
 	case e.segmentChan <- s:
