@@ -5,13 +5,13 @@
 package stack
 
 import (
-	"strings"
-	"sync"
-	"sync/atomic"
-    log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/ilist"
+	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 // NIC represents a "network interface card" to which the networking stack is
@@ -86,6 +86,15 @@ func (n *NIC) findEndpoint(address global.Address) *referencedNetworkEndpoint {
 	}
 
 	return ref
+}
+
+func (n *NIC) refIfNotExistedCreateOne(protocol global.NetworkProtocolNumber, dst global.Address) (*referencedNetworkEndpoint, error) {
+	id := NetworkEndpointID{dst}
+	if ref, ok := n.endpoints[id]; !ok {
+		return n.addAddressLocked(protocol, dst, false)
+	} else {
+		return ref, nil
+	}
 }
 
 func (n *NIC) addAddressLocked(protocol global.NetworkProtocolNumber, addr global.Address, replace bool) (*referencedNetworkEndpoint, error) {
@@ -255,7 +264,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 		return
 	}
 
-    log.Infof("rdn recv:%v", vv)
+	log.Infof("rdn recv:%v", vv)
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
 	r := makeRoute(protocol, dst, src, ref)
 	ref.ep.ReverseHandlePacket(&r, vv)

@@ -6,8 +6,8 @@ package tcp
 
 import (
 	"crypto/rand"
+	"net"
 	"time"
-    "net"
 
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
@@ -331,12 +331,12 @@ func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id st
 
 	//return r.WritePacket(&hdr, data, ProtocolNumber)
 	//p := uint16(rand.Intn(s.portNum)) // rand port
-    hview := hdr.View()
+	hview := hdr.View()
 	d := hview.Merge(data)
 	s.ToNetChan <- &global.EndpointData{
-        Data:d, 
-        Addr:addr,
-    }
+		Data: d,
+		Addr: addr,
+	}
 	return nil
 }
 
@@ -373,12 +373,12 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Transpo
 
 	//return r.WritePacket(&hdr, data, ProtocolNumber)
 	//p := uint16(rand.Intn(s.portNum)) // rand port
-    hview := hdr.View()
+	hview := hdr.View()
 	d := hview.Merge(data)
 	s.ToNetChan <- &global.EndpointData{
-        Data: d, 
-        Addr: addr,
-    }
+		Data: d,
+		Addr: addr,
+	}
 	return nil
 }
 

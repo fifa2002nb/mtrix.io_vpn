@@ -15,7 +15,7 @@ package stack
 
 import (
 	"errors"
-    "fmt"
+	"fmt"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/ports"
@@ -101,8 +101,8 @@ func New(network []string, transport []string) global.Stack {
 }
 
 func (s *Stack) GetPacket() *global.EndpointData {
-    return <-s.ToNetChan
-} 
+	return <-s.ToNetChan
+}
 
 // SetTransportProtocolHandler sets the per-stack default handler for the given
 // protocol.
@@ -254,6 +254,10 @@ func (s *Stack) FindRoute(id global.NICID, localAddr, remoteAddr global.Address,
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	if _, err := nic.refIfNotExistedCreateOne(netProto, remoteAddr); nil != err {
+		return Route{}, global.ErrNoRoute
+	}
+
 	for i := range s.routeTable {
 		if id != 0 && id != s.routeTable[i].NIC || !s.routeTable[i].Match(remoteAddr) {
 			continue
@@ -378,12 +382,12 @@ func (s *Stack) NetAddrHash(a *net.UDPAddr) [6]byte {
 
 // for udpconn
 func (s *Stack) GetConnectedTransportEndpointByHash(hash [6]byte) (*global.Endpoint, error) {
-    if ep, ok := s.ConnectedTransportEndpoints[hash]; ok {
-        return &ep, nil
-    } else {
-        return nil, errors.New(fmt.Sprintf("connection %v does not existed.", hash))
-    }
-} 
+	if ep, ok := s.ConnectedTransportEndpoints[hash]; ok {
+		return &ep, nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("connection %v does not existed.", hash))
+	}
+}
 
 // RegisterTransportEndpoint registers the given endpoint with the stack
 // transport dispatcher. Received packets that match the provided id will be

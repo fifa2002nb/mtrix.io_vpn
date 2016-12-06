@@ -354,7 +354,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 }
 
 func (e *endpoint) Write(v buffer.View, to *global.FullAddress) (uintptr, error) {
-    return uintptr(0), nil
+	return uintptr(0), nil
 }
 
 // Write writes data to the endpoint's peer.
@@ -613,7 +613,7 @@ func (e *endpoint) checkV4Mapped(addr *global.FullAddress) (global.NetworkProtoc
 			return 0, global.ErrNoRoute
 		}
 
-		netProto = header.IPv4ProtocolNumber
+		netProto = header.MMProtocolNumber
 		addr.Addr = addr.Addr[header.IPv6AddressSize-header.IPv4AddressSize:]
 		if addr.Addr == "\x00\x00\x00\x00" {
 			addr.Addr = ""
@@ -933,12 +933,22 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
+	if nil == udpAddr {
+		return
+	}
+	remote := global.Address(udpAddr.IP.To4())
+	route, err := e.stack.FindRoute(e.boundNICID, e.id.LocalAddress, remote, header.MMProtocolNumber)
+	if nil != err {
+		log.Errorf("do not find any matched route:%v.", route)
+		return
+	}
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&e.route, e.id, &vv, udpAddr)
+	s := newSegment(&route, e.id, &vv, udpAddr)
 	if !s.parse() {
 		// TODO: Inform the stack that the packet is malformed.
 		s.decRef()
+		e.stack.RemoveAddress(e.boundNICID, remote)
 		return
 	}
 

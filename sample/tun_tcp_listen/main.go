@@ -9,11 +9,10 @@ package main
 
 import (
 	"fmt"
-    "net"
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
+	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
-    "mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/link/fdbased"
 	"mtrix.io_vpn/link/rawfile"
 	"mtrix.io_vpn/link/tun"
@@ -21,6 +20,7 @@ import (
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/transport/tcp"
 	"mtrix.io_vpn/waiter"
+	"net"
 	"os"
 	"time"
 )
@@ -141,8 +141,8 @@ func main() {
 				if err := s.RegisterConnectedTransportEndpoint(n); nil != err {
 					log.Fatal("register connnected transport endpoint failed. err:%v", err)
 				} else {
-                    go n.WriteToInterface()
-                }
+					go n.WriteToInterface() // 注册成功则开始监听并写入数据到interface
+				}
 			}
 		}
 	}()
