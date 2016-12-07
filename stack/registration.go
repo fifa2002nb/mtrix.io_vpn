@@ -175,7 +175,8 @@ func RegisterTransportProtocol(name string, p TransportProtocol) {
 }
 
 func FindTransportProtocol(name string) (TransportProtocol, bool) {
-	return transportProtocols[name]
+	p, ok := transportProtocols[name]
+    return p, ok
 }
 
 // RegisterNetworkProtocol registers a new network protocol with the stack so
@@ -186,7 +187,8 @@ func RegisterNetworkProtocol(name string, p NetworkProtocol) {
 }
 
 func FindNetworkProtocol(name string) (NetworkProtocol, bool) {
-	return networkProtocols[name]
+	p, ok := networkProtocols[name]
+    return p, ok
 }
 
 // RegisterLinkEndpoint register a link-layer protocol endpoint and returns an

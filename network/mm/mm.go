@@ -77,11 +77,12 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 	if int(hdr.Length()) > len(nv) {
 		// Malformed packet.
 		log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
-		return
+		return nil 
 	}
-	if transportProto, ok := stack.FindTransportProtocol["udp"]; !ok {
+	transProto, ok := stack.FindTransportProtocol("udp")
+    if !ok {
 		log.Errorf("[ParsePacketHeaders] udp protocol didn't found")
-		return
+		return nil
 	}
 	srcPort, dstPort, err := transProto.ParsePorts(nv)
 	if nil != err {
@@ -93,33 +94,38 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 		h := header.IPv4(nv)
 		if !h.IsValid(len(nv)) {
 			log.Errorf("[ParsePacketHeaders] !ipv4.IsValid(%v)", len(nv))
-			return
+			return nil
 		}
 		// For now we don't support fragmentation, so reject fragmented packets.
 		if h.FragmentOffset() != 0 || (h.Flags()&header.IPv4FlagMoreFragments) != 0 {
 			log.Errorf("[ParsePacketHeaders] now we don't support fragmentation. reject it.")
-			return
+			return nil
 		}
 		if netProto, ok := stack.FindNetworkProtocol("ipv4"); !ok {
 			log.Errorf("[ParsePacketHeaders] ipv4 protocol didn't found")
-			return
-		}
-		src, dst := netProto.ParseAddresses(nv)
-		log.Infof("[ParsePacketHeaders] ipv4 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+			return nil
+		} else {
+		    src, dst := netProto.ParseAddresses(nv)
+		    log.Infof("[ParsePacketHeaders] ipv4 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+            return nil
+        }
 	} else if header.IPv6Version == header.IPVersion(nv) {
 		h := header.IPv6(nv)
 		if !h.IsValid(len(nv)) {
 			log.Errorf("[ParsePacketHeaders] !ipv6.IsValid(%v)", len(nv))
-			return
+			return nil
 		}
 		if netProto, ok := stack.FindNetworkProtocol("ipv4"); !ok {
 			log.Errorf("[ParsePacketHeaders] ipv6 protocol didn't found")
-			return
-		}
-		src, dst := netProto.ParseAddresses(nv)
-		log.Infof("[ParsePacketHeaders] ipv6 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+			return nil
+		} else {
+		    src, dst := netProto.ParseAddresses(nv)
+		    log.Infof("[ParsePacketHeaders] ipv6 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+            return nil
+        }
 	} else {
 		log.Errorf("unknown network protocol.")
+        return nil
 	}
 }
 
