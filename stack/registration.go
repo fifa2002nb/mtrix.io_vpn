@@ -5,10 +5,10 @@
 package stack
 
 import (
-	"sync"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/waiter"
+	"sync"
 )
 
 // NetworkEndpointID is the identifier of a network layer protocol endpoint.
@@ -174,11 +174,19 @@ func RegisterTransportProtocol(name string, p TransportProtocol) {
 	transportProtocols[name] = p
 }
 
+func FindTransportProtocol(name string) (TransportProtocol, bool) {
+	return transportProtocols[name]
+}
+
 // RegisterNetworkProtocol registers a new network protocol with the stack so
 // that it becomes available to users of the stack. This function is intended
 // to be called by init() functions of the protocols.
 func RegisterNetworkProtocol(name string, p NetworkProtocol) {
 	networkProtocols[name] = p
+}
+
+func FindNetworkProtocol(name string) (NetworkProtocol, bool) {
+	return networkProtocols[name]
 }
 
 // RegisterLinkEndpoint register a link-layer protocol endpoint and returns an

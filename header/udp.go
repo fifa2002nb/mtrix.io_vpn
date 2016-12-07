@@ -7,7 +7,7 @@ package header
 import (
 	"encoding/binary"
 
-	"mtrix.io_vpn/tcpip"
+	"mtrix.io_vpn/global"
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 	UDPMinimumSize = 8
 
 	// UDPProtocolNumber is UDP's transport protocol number.
-	UDPProtocolNumber tcpip.TransportProtocolNumber = 17
+	UDPProtocolNumber global.TransportProtocolNumber = 17
 )
 
 // SourcePort returns the "source port" field of the udp header.

@@ -193,7 +193,7 @@ func (r *receiver) handleRcvdSegment(s *segment) {
 		r.pendingBufUsed -= s.logicalLen()
 		s.decRef()
 	}
-    
+
 	// Send a potentially delayed ACK if the receive window changed. If the
 	// receive send was closed, we have already sent an immediate ACK, so
 	// there is no need to send another one.

@@ -11,10 +11,10 @@
 package ipv6
 
 import (
-	"mtrix.io_vpn/tcpip"
-	"mtrix.io_vpn/tcpip/buffer"
-	"mtrix.io_vpn/tcpip/header"
-	"mtrix.io_vpn/tcpip/stack"
+	"mtrix.io_vpn/buffer"
+	"mtrix.io_vpn/global"
+	"mtrix.io_vpn/header"
+	"mtrix.io_vpn/stack"
 )
 
 const (
@@ -32,17 +32,17 @@ const (
 type address [header.IPv6AddressSize]byte
 
 type endpoint struct {
-	nicid      tcpip.NICID
+	nicid      global.NICID
 	id         stack.NetworkEndpointID
 	address    address
 	linkEP     stack.LinkEndpoint
 	dispatcher stack.TransportDispatcher
 }
 
-func newEndpoint(nicid tcpip.NICID, addr tcpip.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) *endpoint {
+func newEndpoint(nicid global.NICID, addr global.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) *endpoint {
 	e := &endpoint{nicid: nicid, linkEP: linkEP, dispatcher: dispatcher}
 	copy(e.address[:], addr)
-	e.id = stack.NetworkEndpointID{tcpip.Address(e.address[:])}
+	e.id = stack.NetworkEndpointID{global.Address(e.address[:])}
 	return e
 }
 
@@ -57,7 +57,7 @@ func (e *endpoint) MTU() uint32 {
 }
 
 // NICID returns the ID of the NIC this endpoint belongs to.
-func (e *endpoint) NICID() tcpip.NICID {
+func (e *endpoint) NICID() global.NICID {
 	return e.nicid
 }
 
@@ -73,7 +73,7 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 }
 
 // WritePacket writes a packet to the given destination address and protocol.
-func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol tcpip.TransportProtocolNumber) error {
+func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol global.TransportProtocolNumber) error {
 	length := uint16(hdr.UsedLength())
 	if payload != nil {
 		length += uint16(len(payload))
@@ -83,7 +83,7 @@ func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload 
 		PayloadLength: length,
 		NextHeader:    uint8(protocol),
 		HopLimit:      65,
-		SrcAddr:       tcpip.Address(e.address[:]),
+		SrcAddr:       global.Address(e.address[:]),
 		DstAddr:       r.RemoteAddress,
 	})
 
@@ -100,11 +100,11 @@ func (e *endpoint) HandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 
 	vv.TrimFront(header.IPv6MinimumSize)
 	vv.CapLength(int(h.PayloadLength()))
-	e.dispatcher.DeliverTransportPacket(r, tcpip.TransportProtocolNumber(h.NextHeader()), vv)
+	e.dispatcher.DeliverTransportPacket(r, global.TransportProtocolNumber(h.NextHeader()), vv)
 }
 
-func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {
-}
+// Close cleans up resources associated with the endpoint.
+func (*endpoint) Close() {}
 
 type protocol struct{}
 
@@ -117,7 +117,7 @@ func NewProtocol() stack.NetworkProtocol {
 }
 
 // Number returns the ipv6 protocol number.
-func (p *protocol) Number() tcpip.NetworkProtocolNumber {
+func (p *protocol) Number() global.NetworkProtocolNumber {
 	return ProtocolNumber
 }
 
@@ -127,13 +127,13 @@ func (p *protocol) MinimumPacketSize() int {
 }
 
 // ParseAddresses implements NetworkProtocol.ParseAddresses.
-func (*protocol) ParseAddresses(v buffer.View) (src, dst tcpip.Address) {
+func (*protocol) ParseAddresses(v buffer.View) (src, dst global.Address) {
 	h := header.IPv6(v)
 	return h.SourceAddress(), h.DestinationAddress()
 }
 
 // NewEndpoint creates a new ipv6 endpoint.
-func (p *protocol) NewEndpoint(nicid tcpip.NICID, addr tcpip.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) (stack.NetworkEndpoint, error) {
+func (p *protocol) NewEndpoint(nicid global.NICID, addr global.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) (stack.NetworkEndpoint, error) {
 	return newEndpoint(nicid, addr, dispatcher, linkEP), nil
 }
 

@@ -14,10 +14,10 @@ import (
 	"crypto/rand"
 	"sync/atomic"
 
-	"mtrix.io_vpn/tcpip"
-	"mtrix.io_vpn/tcpip/buffer"
-	"mtrix.io_vpn/tcpip/header"
-	"mtrix.io_vpn/tcpip/stack"
+	"mtrix.io_vpn/buffer"
+	"mtrix.io_vpn/global"
+	"mtrix.io_vpn/header"
+	"mtrix.io_vpn/stack"
 )
 
 const (
@@ -38,21 +38,25 @@ const (
 type address [header.IPv4AddressSize]byte
 
 type endpoint struct {
-	nicid      tcpip.NICID
-	id         stack.NetworkEndpointID
-	address    address
-	linkEP     stack.LinkEndpoint
-	dispatcher stack.TransportDispatcher
+	nicid        global.NICID
+	id           stack.NetworkEndpointID
+	address      address
+	linkEP       stack.LinkEndpoint
+	dispatcher   stack.TransportDispatcher
+	echoRequests chan echoRequest
 }
 
-func newEndpoint(nicid tcpip.NICID, addr tcpip.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) *endpoint {
+func newEndpoint(nicid global.NICID, addr global.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) *endpoint {
 	e := &endpoint{
-		nicid:      nicid,
-		linkEP:     linkEP,
-		dispatcher: dispatcher,
+		nicid:        nicid,
+		linkEP:       linkEP,
+		dispatcher:   dispatcher,
+		echoRequests: make(chan echoRequest, 10),
 	}
 	copy(e.address[:], addr)
-	e.id = stack.NetworkEndpointID{tcpip.Address(e.address[:])}
+	e.id = stack.NetworkEndpointID{global.Address(e.address[:])}
+
+	go e.echoReplier()
 
 	return e
 }
@@ -68,7 +72,7 @@ func (e *endpoint) MTU() uint32 {
 }
 
 // NICID returns the ID of the NIC this endpoint belongs to.
-func (e *endpoint) NICID() tcpip.NICID {
+func (e *endpoint) NICID() global.NICID {
 	return e.nicid
 }
 
@@ -84,7 +88,7 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 }
 
 // WritePacket writes a packet to the given destination address and protocol.
-func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol tcpip.TransportProtocolNumber) error {
+func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload buffer.View, protocol global.TransportProtocolNumber) error {
 	ip := header.IPv4(hdr.Prepend(header.IPv4MinimumSize))
 	length := uint16(hdr.UsedLength() + len(payload))
 	id := uint32(0)
@@ -99,7 +103,7 @@ func (e *endpoint) WritePacket(r *stack.Route, hdr *buffer.Prependable, payload 
 		ID:          uint16(id),
 		TTL:         65,
 		Protocol:    uint8(protocol),
-		SrcAddr:     tcpip.Address(e.address[:]),
+		SrcAddr:     global.Address(e.address[:]),
 		DstAddr:     r.RemoteAddress,
 	})
 	ip.SetChecksum(^ip.CalculateChecksum())
@@ -124,10 +128,18 @@ func (e *endpoint) HandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
 	tlen := int(h.TotalLength())
 	vv.TrimFront(hlen)
 	vv.CapLength(tlen - hlen)
-	e.dispatcher.DeliverTransportPacket(r, tcpip.TransportProtocolNumber(h.Protocol()), vv)
+	p := global.TransportProtocolNumber(h.Protocol())
+	if p == header.ICMPv4ProtocolNumber {
+		e.handleICMP(r, vv)
+		return
+	}
+	e.dispatcher.DeliverTransportPacket(r, p, vv)
 }
 
-func (e *endpoint) ReverseHandlePacket(r *Route, hdr *buffer.Prependable, vv *buffer.VectorisedView) {}
+// Close cleans up resources associated with the endpoint.
+func (e *endpoint) Close() {
+	close(e.echoRequests)
+}
 
 type protocol struct{}
 
@@ -140,7 +152,7 @@ func NewProtocol() stack.NetworkProtocol {
 }
 
 // Number returns the ipv4 protocol number.
-func (p *protocol) Number() tcpip.NetworkProtocolNumber {
+func (p *protocol) Number() global.NetworkProtocolNumber {
 	return ProtocolNumber
 }
 
@@ -150,13 +162,13 @@ func (p *protocol) MinimumPacketSize() int {
 }
 
 // ParseAddresses implements NetworkProtocol.ParseAddresses.
-func (*protocol) ParseAddresses(v buffer.View) (src, dst tcpip.Address) {
+func (*protocol) ParseAddresses(v buffer.View) (src, dst global.Address) {
 	h := header.IPv4(v)
 	return h.SourceAddress(), h.DestinationAddress()
 }
 
 // NewEndpoint creates a new ipv4 endpoint.
-func (p *protocol) NewEndpoint(nicid tcpip.NICID, addr tcpip.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) (stack.NetworkEndpoint, error) {
+func (p *protocol) NewEndpoint(nicid global.NICID, addr global.Address, dispatcher stack.TransportDispatcher, linkEP stack.LinkEndpoint) (stack.NetworkEndpoint, error) {
 	return newEndpoint(nicid, addr, dispatcher, linkEP), nil
 }
 
@@ -191,7 +203,7 @@ func hash3Words(a, b, c, initval uint32) uint32 {
 // hash calculates a hash value for the given route. It uses the source &
 // destination address, the transport protocol number, and a random initial
 // value (generated once on initialization) to generate the hash.
-func hash(r *stack.Route, protocol tcpip.TransportProtocolNumber) uint32 {
+func hash(r *stack.Route, protocol global.TransportProtocolNumber) uint32 {
 	t := r.LocalAddress
 	a := uint32(t[0]) | uint32(t[1])<<8 | uint32(t[2])<<16 | uint32(t[3])<<24
 	t = r.RemoteAddress

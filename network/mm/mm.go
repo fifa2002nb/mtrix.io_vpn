@@ -5,11 +5,11 @@
 package mm
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/stack"
-    log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -69,18 +69,73 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 	return e.linkEP.MaxHeaderLength() + header.MMMinimumSize
 }
 
+func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
+	nv := buffer.NewView(len(v))
+	copy(nv, v)
+	// parse udp header
+	hdr := header.UDP(nv)
+	if int(hdr.Length()) > len(nv) {
+		// Malformed packet.
+		log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
+		return
+	}
+	if transportProto, ok := stack.FindTransportProtocol["udp"]; !ok {
+		log.Errorf("[ParsePacketHeaders] udp protocol didn't found")
+		return
+	}
+	srcPort, dstPort, err := transProto.ParsePorts(nv)
+	if nil != err {
+		log.Errorf("[ParsePacketHeaders] parsePorts err:%v", err)
+	}
+	nv.TrimFront(header.UDPMinimumSize)
+	// parse ip header
+	if header.IPv4Version == header.IPVersion(nv) {
+		h := header.IPv4(nv)
+		if !h.IsValid(len(nv)) {
+			log.Errorf("[ParsePacketHeaders] !ipv4.IsValid(%v)", len(nv))
+			return
+		}
+		// For now we don't support fragmentation, so reject fragmented packets.
+		if h.FragmentOffset() != 0 || (h.Flags()&header.IPv4FlagMoreFragments) != 0 {
+			log.Errorf("[ParsePacketHeaders] now we don't support fragmentation. reject it.")
+			return
+		}
+		if netProto, ok := stack.FindNetworkProtocol("ipv4"); !ok {
+			log.Errorf("[ParsePacketHeaders] ipv4 protocol didn't found")
+			return
+		}
+		src, dst := netProto.ParseAddresses(nv)
+		log.Infof("[ParsePacketHeaders] ipv4 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+	} else if header.IPv6Version == header.IPVersion(nv) {
+		h := header.IPv6(nv)
+		if !h.IsValid(len(nv)) {
+			log.Errorf("[ParsePacketHeaders] !ipv6.IsValid(%v)", len(nv))
+			return
+		}
+		if netProto, ok := stack.FindNetworkProtocol("ipv4"); !ok {
+			log.Errorf("[ParsePacketHeaders] ipv6 protocol didn't found")
+			return
+		}
+		src, dst := netProto.ParseAddresses(nv)
+		log.Infof("[ParsePacketHeaders] ipv6 src:%v srcPort:%v dst:%v dstPort:%v", src, srcPort, dst, dstPort)
+	} else {
+		log.Errorf("unknown network protocol.")
+	}
+}
+
 // WritePacket writes a packet to the given destination address and protocol.
 func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol global.TransportProtocolNumber) error {
 	// 取MM协议头部
 	m := header.MM(payload)
 	// 做一些MM协议的验证
 	if header.MM_FLG_DAT != m.Flag() || m.PayloadLength() > m.TotalLength() {
-        log.Errorf("flag: %v!=%v and len: %v>=%v", header.MM_FLG_DAT, m.Flag(), m.PayloadLength(), m.TotalLength())
+		log.Errorf("flag: %v!=%v and len: %v>=%v", header.MM_FLG_DAT, m.Flag(), m.PayloadLength(), m.TotalLength())
 		//return nil
 	}
 	// 剥掉MM协议的头部，发送数据部分
-    payload.TrimFront(header.MMMinimumSize)
-    log.Infof("[WritePacket] %v", payload)
+	payload.TrimFront(header.MMMinimumSize)
+	log.Infof("[WritePacket] %v", payload)
+	e.ParsePacketHeaders(payload) // for test
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
@@ -90,7 +145,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 		return
 	}
 
-    hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
+	hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
 
 	// 组装MM协议头部
 	m := header.MM(hdr.Prepend(header.MMMinimumSize))
@@ -101,7 +156,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 		Seq:           uint32(0),              // 暂时初始化为0
 		SessionId:     r.LocalAddress,         // sessionId用客户端4字节IP来代替
 		PayloadLength: uint16(vv.Size()),      // 数据报大小
-		TotalLength:   uint16(vv.Size()),              // 暂时初始化为0，传输层中增加noise后计算总长度
+		TotalLength:   uint16(vv.Size()),      // 暂时初始化为0，传输层中增加noise后计算总长度
 	})
 
 	// do something

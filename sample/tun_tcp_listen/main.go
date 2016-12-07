@@ -100,7 +100,7 @@ func main() {
 	s.SetRouteTable([]global.Route{
 		{
 			Destination: global.Address("\x00\x00\x00\x00"), // 0.0.0.0
-			Mask:        global.Address("\x00\x00\x00\x00"), // 0.0.0.0 
+			Mask:        global.Address("\x00\x00\x00\x00"), // 0.0.0.0
 			Gateway:     "",
 			NIC:         1,
 		},
