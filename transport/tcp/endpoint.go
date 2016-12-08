@@ -165,10 +165,10 @@ func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, wait
 }
 
 func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) {
-	if !subnetInited {
+	if !e.subnetInited {
 		e.subnetIP = ip
 		e.subnetMask = netmask
-		subnetInited = true
+		e.subnetInited = true
 	}
 }
 

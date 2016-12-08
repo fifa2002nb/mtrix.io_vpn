@@ -72,10 +72,10 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 				log.Fatal(err)
 			}
 			linkEP := stack.FindLinkEndpoint(linkID)
-			linkEP.SetMTU(mtu)
+			linkEP.SetMTU(uint32(mtu))
 			linkEP.SetFd(fd)
 			s.EnableNIC(NICID)
-			log.infof("[waitingForEnableNIC] enabled NIC:%v", NICID)
+			log.Infof("[waitingForEnableNIC] enabled NIC:%v", NICID)
 			break
 		}
 	}
@@ -96,7 +96,7 @@ func main() {
 
 	// fd and mtu inited by default value
 	linkID := fdbased.New(-1, -1, nil)
-	NICID := 1
+	NICID := global.NICID(1)
 	if err := s.CreateDisabledNIC(NICID, linkID); err != nil {
 		log.Fatal(err)
 	}

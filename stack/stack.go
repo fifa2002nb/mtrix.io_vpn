@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
-	"mtrix.io_vpn/ippool"
+	"mtrix.io_vpn/utils"
 	"mtrix.io_vpn/ports"
 	"mtrix.io_vpn/waiter"
 	"net"
@@ -63,7 +63,7 @@ type Stack struct {
 
 // New allocates a new networking stack with only the requested networking and
 // transport protocols.
-func New(addr string, network []string, transport []string) global.Stack {
+func New(network []string, transport []string) global.Stack {
 	s := &Stack{
 		transportProtocols: make(map[global.TransportProtocolNumber]*transportProtocolState),
 		networkProtocols:   make(map[global.NetworkProtocolNumber]NetworkProtocol),
@@ -73,7 +73,7 @@ func New(addr string, network []string, transport []string) global.Stack {
 		//startPort:          uint16(40000),                 // fixed
 		//portNum:            uint16(1),                     // fixed
 		ConnectedTransportEndpoints: make(map[[6]byte]global.Endpoint),
-		IPPool: ippool.NewIPPool(addr),
+		//IPPool: utils.NewIPPool(addr),
 	}
 
 	// Add specified network protocols.
@@ -102,6 +102,14 @@ func New(addr string, network []string, transport []string) global.Stack {
 	s.demux = newTransportDemuxer(s)
 
 	return s
+}
+
+func (s *Stack) EnableIPPool(addr string) error {
+    s.IPPool = utils.NewIPPool(addr)
+    if nil == s.IPPool {
+        return errors.New("init IPPool failed.")        
+    }
+    return nil
 }
 
 func (s *Stack) GetPacket() *global.EndpointData {

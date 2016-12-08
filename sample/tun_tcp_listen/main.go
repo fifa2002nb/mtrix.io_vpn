@@ -76,6 +76,10 @@ func main() {
 	// NIC and address.
 	s := stack.New([]string{mm.ProtocolName}, []string{tcp.ProtocolName})
 
+    if err := s.EnableIPPool("10.1.1.1/24"); nil != err {
+        log.Fatal(err)
+    }
+
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {
 		log.Fatal(err)

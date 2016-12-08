@@ -141,7 +141,7 @@ func (h *handshake) synSentState(s *segment) error {
 	// and the handshake is completed.
 	if s.flagIsSet(flagAck) {
 		h.state = handshakeCompleted
-		h.ep.InitSubnet(s.peerAddr, s.netmask)
+		h.ep.InitSubnet(s.subnetIP, s.subnetMask)
 		h.ep.sendRaw(nil, flagAck, h.iss+1, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 		return nil
 	}
@@ -198,7 +198,7 @@ func (h *handshake) synRcvdState(s *segment) error {
 	// peer acknowledges our SYN, the handshake is completed.
 	if s.flagIsSet(flagAck) {
 		h.state = handshakeCompleted
-		h.ep.InitSubnet(s.peerAddr, s.netmask)
+		h.ep.InitSubnet(s.subnetIP, s.subnetMask)
 		return nil
 	}
 
@@ -435,7 +435,7 @@ func (e *endpoint) handleWrite(ok bool) {
 // with the given error code.
 // This method must only be called from the protocol goroutine.
 func (e *endpoint) resetConnection(err error) {
-	e.sendRaw(nil, flagAck|flagRst, e.snd.sndUna, e.rcv.rcvNxt, e.rcv.rcvNxt.Size(e.rcv.rcvAcc, e.subnetIP, e.subnetMask))
+	e.sendRaw(nil, flagAck|flagRst, e.snd.sndUna, e.rcv.rcvNxt, e.rcv.rcvNxt.Size(e.rcv.rcvAcc), e.subnetIP, e.subnetMask)
 
 	e.mu.Lock()
 	e.state = stateError

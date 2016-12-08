@@ -207,10 +207,13 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 		return nil, err
 	}
 	// assign endpoint's subnetIP when tcp handshaking
-	if cltIP, err := n.stack.NextIP(); nil != err {
+	cltIP, err := n.stack.NextIP()
+    if nil != err {
 		return nil, err
 	}
-	n.InitSubnet(global.Address(cltIP.IP.To4()), cltIP.Mask.Size())
+    subnetIP := global.Address(cltIP.IP.To4())
+    subnetMask, _ := cltIP.Mask.Size()
+	n.InitSubnet(subnetIP, uint8(subnetMask))
 
 	n.isRegistered = true
 	n.state = stateConnected

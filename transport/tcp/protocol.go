@@ -85,7 +85,7 @@ func replyWithReset(stack *stack.Stack, s *segment) {
 
 	ack := s.sequenceNumber.Add(s.logicalLen())
 
-	sendTCP(stack, s.udpAddr, &s.route, s.id, nil, flagRst|flagAck, seq, ack, 0)
+	sendTCP(stack, s.udpAddr, &s.route, s.id, nil, flagRst|flagAck, seq, ack, 0, s.subnetIP, s.subnetMask)
 }
 
 func init() {

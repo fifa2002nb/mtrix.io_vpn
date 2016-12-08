@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"net"
 	"sync/atomic"
+    "mtrix.io_vpn/global"
 )
 
 type IPPool struct {
@@ -13,11 +14,11 @@ type IPPool struct {
 }
 
 func NewIPPool(addr string) *IPPool {
-	_, subnet, err := net.ParseCIDR(cfg.Addr)
+	_, subnet, err := net.ParseCIDR(addr)
 	if nil != err {
 		return nil
 	}
-	return &IPPool{subnet: subnet.Mask}
+	return &IPPool{subnet: subnet}
 }
 
 func (p *IPPool) NextIP() (*net.IPNet, error) {
@@ -43,15 +44,15 @@ func (p *IPPool) NextIP() (*net.IPNet, error) {
 	return ipnet, nil
 }
 
-func (p *IPPool) ReleaseIP(ipnet *net.IPNet) {
+func (p *IPPool) ReleaseIP(ip global.Address) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Errorf("%v", err)
 		}
 	}()
 
-	if nil != ipnet {
-		i := ipnet.IP[3]
+	if 4 == len(ip) {
+		i := ip[3]
 		p.pool[i] = 0
 	}
 }

@@ -377,6 +377,12 @@ type Stack interface {
 
 	// CreateNIC creates a NIC with the provided id and link-layer sender.
 	CreateNIC(id NICID, linkEndpoint LinkEndpointID) error
+    
+    CreateDisabledNIC(id NICID, linkEP LinkEndpointID) error
+
+    EnableNIC(id NICID) error
+
+    EnableIPPool(addr string) error
 
 	// AddAddress adds a new network-layer address to the specified NIC.
 	AddAddress(id NICID, protocol NetworkProtocolNumber, addr Address) error
