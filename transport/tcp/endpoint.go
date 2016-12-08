@@ -139,23 +139,41 @@ type endpoint struct {
 	rcv *receiver
 	snd *sender
 
-	addr *net.UDPAddr
+	addr         *net.UDPAddr
+	subnetInited bool
+	subnetIP     global.Address
+	subnetMask   uint8
 }
 
 func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, waiterQueue *waiter.Queue) *endpoint {
 	return &endpoint{
-		stack:       stack,
-		netProto:    netProto,
-		waiterQueue: waiterQueue,
-		v6only:      true,
-		segmentChan: make(chan *segment, 10),
-		rcvBufSize:  208 * 1024,
-		sndBufSize:  208 * 1024,
-		sndChan:     make(chan struct{}, 1),
-		notifyChan:  make(chan struct{}, 1),
-		noDelay:     true,
-		reuseAddr:   true,
+		stack:        stack,
+		netProto:     netProto,
+		waiterQueue:  waiterQueue,
+		v6only:       true,
+		segmentChan:  make(chan *segment, 10),
+		rcvBufSize:   208 * 1024,
+		sndBufSize:   208 * 1024,
+		sndChan:      make(chan struct{}, 1),
+		notifyChan:   make(chan struct{}, 1),
+		noDelay:      true,
+		reuseAddr:    true,
+		subnetInited: false,
+		subnetIP:     global.Address("\x00\x00\x00\x00"),
+		subnetMask:   0,
 	}
+}
+
+func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) {
+	if !subnetInited {
+		e.subnetIP = ip
+		e.subnetMask = netmask
+		subnetInited = true
+	}
+}
+
+func (e *endpoint) InitedSubnet() bool {
+	return e.subnetInited
 }
 
 func (e *endpoint) SetNetAddr(addr *net.UDPAddr) {
@@ -288,6 +306,10 @@ func (e *endpoint) cleanup() {
 	}
 
 	e.route.Release()
+	// unregister connectedTransportEndpoint hashtable's item
+	e.stack.UnregisterConnectedTransportEndpoint(e.stack.NetAddrHash(e.addr))
+	// release endpoint's subnetIP
+	e.stack.ReleaseIP(e.subnetIP)
 }
 
 // Read reads data from the endpoint.
@@ -680,14 +702,14 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 
 	netProtos := []global.NetworkProtocolNumber{netProto}
 	e.id.LocalAddress = r.LocalAddress
-    e.id.LocalPort = 0
+	e.id.LocalPort = 0
 	//e.id.RemoteAddress = addr.Addr
 	//e.id.RemotePort = addr.Port
 
-    // The endpoint is bound to a port, attempt to register it.
-    if err := e.stack.RegisterTransportEndpoint(nicid, netProtos, ProtocolNumber, e.id, e); err != nil {
-        return err
-    }
+	// The endpoint is bound to a port, attempt to register it.
+	if err := e.stack.RegisterTransportEndpoint(nicid, netProtos, ProtocolNumber, e.id, e); err != nil {
+		return err
+	}
 
 	// Remove the port reservation. This can happen when Bind is called
 	// before Connect: in such a case we don't want to hold on to
@@ -913,19 +935,19 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
-    log.Infof("[HandlePacket] %v", v)
+	log.Infof("[HandlePacket] %v", v)
 	if nil == udpAddr {
 		return
 	}
 	remote := global.Address(udpAddr.IP.To4())
 	route, err := e.stack.FindRoute(e.boundNICID, e.id.LocalAddress, remote, header.MMProtocolNumber)
 	if nil != err {
-        log.Errorf("didn't found any matched route:{local:%v remote:%v}. err:%v.", err, e.id.LocalAddress, remote)
+		log.Errorf("didn't found any matched route:{local:%v remote:%v}. err:%v.", err, e.id.LocalAddress, remote)
 		return
 	}
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-    id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
+	id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
 	s := newSegment(&route, id, &vv, udpAddr)
 	if !s.parse() {
 		// TODO: Inform the stack that the packet is malformed.
@@ -944,7 +966,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 }
 
 func (e *endpoint) WriteToInterface() error {
-    log.Infof("Now %v interfaceWriter running.", e.route)
+	log.Infof("Now %v interfaceWriter running.", e.route)
 	waitEntry, notifyCh := waiter.NewChannelEntry(nil)
 	e.waiterQueue.EventRegister(&waitEntry, waiter.EventIn)
 	defer e.waiterQueue.EventUnregister(&waitEntry)
@@ -954,8 +976,10 @@ func (e *endpoint) WriteToInterface() error {
 			if err == global.ErrWouldBlock {
 				<-notifyCh
 				continue
+			} else {
+				e.Close()
+				return err
 			}
-			return err
 		}
 		e.route.WritePacket(v, header.TCPProtocolNumber)
 	}

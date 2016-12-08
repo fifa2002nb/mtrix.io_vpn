@@ -20,6 +20,8 @@ const (
 	winSize     = 14
 	tcpChecksum = 16
 	urgentPtr   = 18
+	subnetIP    = 20
+	subnetMask  = 24
 )
 
 // Flags that may be set in a TCP segment.
@@ -34,10 +36,10 @@ const (
 
 // Options that may be present in a TCP segment.
 const (
-    TCPOptionEOL = 0
-    TCPOptionNOP = 1
-    TCPOptionMSS = 2
-    TCPOptionWS  = 3
+	TCPOptionEOL = 0
+	TCPOptionNOP = 1
+	TCPOptionMSS = 2
+	TCPOptionWS  = 3
 )
 
 // TCPFields contains the fields of a TCP packet. It is used to describe the
@@ -69,6 +71,10 @@ type TCPFields struct {
 
 	// UrgentPointer is the "urgent pointer" field of a TCP packet.
 	UrgentPointer uint16
+
+	SubnetIP global.Address
+
+	SubnetMask uint8
 }
 
 // TCP represents a TCP header stored in a byte array.
@@ -76,11 +82,27 @@ type TCP []byte
 
 const (
 	// TCPMinimumSize is the minimum size of a valid TCP packet.
-	TCPMinimumSize = 20
+	TCPMinimumSize = 25
 
 	// TCPProtocolNumber is TCP's transport protocol number.
 	TCPProtocolNumber global.TransportProtocolNumber = 6
 )
+
+func (b TCP) SubnetIP() global.Address {
+	return global.Address(b[subnetIP : subnetIP+IPv4AddressSize])
+}
+
+func (b TCP) SetSubnetIP(addr global.Address) {
+	copy(b[subnetIP:subnetIP+IPv4AddressSize], addr)
+}
+
+func (b TCP) SubnetMask() uint8 {
+	return b[subnetMask]
+}
+
+func (b TCP) SetNetMask(nm uint8) {
+	b[subnetMask] = nm
+}
 
 // SourcePort returns the "source port" field of the tcp header.
 func (b TCP) SourcePort() uint16 {
@@ -172,6 +194,8 @@ func (b TCP) Encode(t *TCPFields) {
 	b[dataOffset] = (t.DataOffset / 4) << 4
 	binary.BigEndian.PutUint16(b[tcpChecksum:], t.Checksum)
 	binary.BigEndian.PutUint16(b[urgentPtr:], t.UrgentPointer)
+	copy(b[subnetIP:subnetIP+IPv4AddressSize], t.SubnetIP)
+	b[subnetMask] = t.SubnetMask
 }
 
 // EncodePartial updates a subset of the fields of the tcp header. It is useful

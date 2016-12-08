@@ -68,6 +68,16 @@ func (e *endpoint) MTU() uint32 {
 	return uint32(e.mtu)
 }
 
+// for dynamic adjust
+func (e *endpoint) SetMTU(mtu uint32) {
+	e.mtu = int(mtu)
+}
+
+// for dynamic adjust
+func (e *endpoint) SetFd(fd int) {
+	e.fd = fd
+}
+
 // MaxHeaderLength returns the maximum size of the header. Given that it
 // doesn't have a header, it just returns 0.
 func (*endpoint) MaxHeaderLength() uint16 {

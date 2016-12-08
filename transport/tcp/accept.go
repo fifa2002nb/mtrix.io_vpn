@@ -12,12 +12,12 @@ import (
 	"io"
 	"sync"
 	"time"
-	
+
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/seqnum"
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/waiter"
-	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -201,12 +201,16 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 		n.Close()
 		return nil, err
 	}
-    
-    n.addr = s.udpAddr
-    if err := l.stack.RegisterConnectedTransportEndpoint(n); nil != err {
-        n.Close()
-        return nil, err
-    }
+
+	n.addr = s.udpAddr
+	if err := n.stack.RegisterConnectedTransportEndpoint(n); nil != err {
+		return nil, err
+	}
+	// assign endpoint's subnetIP when tcp handshaking
+	if cltIP, err := n.stack.NextIP(); nil != err {
+		return nil, err
+	}
+	n.InitSubnet(global.Address(cltIP.IP.To4()), cltIP.Mask.Size())
 
 	n.isRegistered = true
 	n.state = stateConnected
@@ -225,7 +229,7 @@ func (l *listenContext) createEndpointAndPerformHandshake(s *segment, mss uint16
 	cookie := l.createCookie(s.id, irs, encodeMSS(mss))
 	ep, err := l.createConnectedEndpoint(s, cookie, irs, mss)
 	if err != nil {
-        log.Errorf("createConnectedEndpoint err:%v", err)
+		log.Errorf("createConnectedEndpoint err:%v", err)
 		return nil, err
 	}
 
@@ -287,7 +291,7 @@ func (e *endpoint) handleListenSegment(ctx *listenContext, s *segment) {
 			go e.handleSynSegment(ctx, s, mss)
 		} else {
 			cookie := ctx.createCookie(s.id, s.sequenceNumber, encodeMSS(mss))
-			sendSynTCP(e.stack, e.addr, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd)
+			sendSynTCP(e.stack, e.addr, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd, e.subnetIP, e.subnetMask)
 		}
 	case flagAck:
 		if data, ok := ctx.isCookieValid(s.id, s.ackNumber-1, s.sequenceNumber-1); ok && int(data) < len(mssTable) {

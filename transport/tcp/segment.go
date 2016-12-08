@@ -5,12 +5,12 @@
 package tcp
 
 import (
-	"net"
-	"sync/atomic"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/seqnum"
 	"mtrix.io_vpn/stack"
+	"net"
+	"sync/atomic"
 )
 
 // Flags that may be set in a TCP segment.
@@ -44,6 +44,8 @@ type segment struct {
 	window         seqnum.Size
 	options        []byte
 	udpAddr        *net.UDPAddr
+	subnetIP       global.Address
+	subnetMask     uint8
 }
 
 func newSegment(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView, addr *net.UDPAddr) *segment {
@@ -67,6 +69,9 @@ func (s *segment) clone() *segment {
 		window:         s.window,
 		route:          s.route.Clone(),
 		viewToDeliver:  s.viewToDeliver,
+		udpAddr:        s.udpAddr,
+		subnetIP:       s.subnetIP,
+		subnetMask:     s.subnetMask,
 	}
 	t.data = s.data.Clone(t.views[:])
 	return t
@@ -104,8 +109,8 @@ func (s *segment) logicalLen() seqnum.Size {
 // skip the data. Returns boolean indicating if the parsing was successful.
 func (s *segment) parse() bool {
 	if header.TCPMinimumSize > s.data.Size() {
-	    return false;	
-	}	
+		return false
+	}
 	h := header.TCP(s.data.First())
 	// h is the header followed by the payload. We check that the offset to
 	// the data respects the following constraints:
@@ -129,6 +134,7 @@ func (s *segment) parse() bool {
 	s.ackNumber = seqnum.Value(h.AckNumber())
 	s.flags = h.Flags()
 	s.window = seqnum.Size(h.WindowSize())
-
+	s.subnetIP = h.SubnetIP()
+	s.subnetMask = h.SubnetMask()
 	return true
 }

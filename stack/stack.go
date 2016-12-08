@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
+	"mtrix.io_vpn/ippool"
 	"mtrix.io_vpn/ports"
 	"mtrix.io_vpn/waiter"
 	"net"
@@ -56,11 +57,13 @@ type Stack struct {
 	tmu                         sync.RWMutex
 	ToNetChan                   chan *global.EndpointData
 	ConnectedTransportEndpoints map[[6]byte]global.Endpoint
+
+	*utils.IPPool
 }
 
 // New allocates a new networking stack with only the requested networking and
 // transport protocols.
-func New(network []string, transport []string) global.Stack {
+func New(addr string, network []string, transport []string) global.Stack {
 	s := &Stack{
 		transportProtocols: make(map[global.TransportProtocolNumber]*transportProtocolState),
 		networkProtocols:   make(map[global.NetworkProtocolNumber]NetworkProtocol),
@@ -70,6 +73,7 @@ func New(network []string, transport []string) global.Stack {
 		//startPort:          uint16(40000),                 // fixed
 		//portNum:            uint16(1),                     // fixed
 		ConnectedTransportEndpoints: make(map[[6]byte]global.Endpoint),
+		IPPool: ippool.NewIPPool(addr),
 	}
 
 	// Add specified network protocols.
@@ -254,13 +258,13 @@ func (s *Stack) FindRoute(id global.NICID, localAddr, remoteAddr global.Address,
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-    if nic, ok := s.nics[id]; !ok {
-        return Route{}, errors.New(fmt.Sprintf("nic:%v not existed.", id)) 
-    } else {
-        if _, err := nic.refIfNotExistedCreateOne(netProto, remoteAddr); nil != err {
-            return Route{}, err 
-        }
-    }
+	if nic, ok := s.nics[id]; !ok {
+		return Route{}, errors.New(fmt.Sprintf("nic:%v not existed.", id))
+	} else {
+		if _, err := nic.refIfNotExistedCreateOne(netProto, remoteAddr); nil != err {
+			return Route{}, err
+		}
+	}
 
 	for i := range s.routeTable {
 		if id != 0 && id != s.routeTable[i].NIC || !s.routeTable[i].Match(remoteAddr) {
@@ -369,10 +373,17 @@ func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
 	}
 	s.tmu.RLock()
 	defer s.tmu.RUnlock()
-
 	s.ConnectedTransportEndpoints[s.NetAddrHash(ep.GetNetAddr())] = ep
-
 	return nil
+}
+
+// for udpconn
+func (s *Stack) UnregisterConnectedTransportEndpoint(hash [6]byte) {
+	if _, ok := s.ConnectedTransportEndpoints[hash]; ok {
+		s.tmu.RLock()
+		delete(s.ConnectedTransportEndpoints, hash)
+		s.tmu.RUnlock()
+	}
 }
 
 // for udpconn

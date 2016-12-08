@@ -143,6 +143,9 @@ type LinkEndpoint interface {
 	// includes the maximum size of an IP packet.
 	MTU() uint32
 
+	// for dynamic adjust
+	SetMTU(mtu uint32)
+	SetFd(fd int)
 	// MaxHeaderLength returns the maximum size the data link (and
 	// lower level layers combined) headers can have. Higher levels use this
 	// information to reserve space in the front of the packets they're
@@ -176,7 +179,7 @@ func RegisterTransportProtocol(name string, p TransportProtocol) {
 
 func FindTransportProtocol(name string) (TransportProtocol, bool) {
 	p, ok := transportProtocols[name]
-    return p, ok
+	return p, ok
 }
 
 // RegisterNetworkProtocol registers a new network protocol with the stack so
@@ -188,7 +191,7 @@ func RegisterNetworkProtocol(name string, p NetworkProtocol) {
 
 func FindNetworkProtocol(name string) (NetworkProtocol, bool) {
 	p, ok := networkProtocols[name]
-    return p, ok
+	return p, ok
 }
 
 // RegisterLinkEndpoint register a link-layer protocol endpoint and returns an

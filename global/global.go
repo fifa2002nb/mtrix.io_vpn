@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-    "net"
+	"net"
 
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/waiter"
@@ -193,8 +193,8 @@ type Endpoint interface {
 	// one is specified. This method does not block if the data cannot be
 	// written.
 	Write(buffer.View, *FullAddress) (uintptr, error)
-    WriteToNet(buffer.View, *FullAddress) (uintptr, error)
-    WriteToInterface() error
+	WriteToNet(buffer.View, *FullAddress) (uintptr, error)
+	WriteToInterface() error
 
 	// RecvMsg reads data and a control message from the endpoint. This method
 	// does not block if there is no data pending.
@@ -272,9 +272,12 @@ type Endpoint interface {
 	// GetSockOpt gets a socket option.
 	GetSockOpt(interface{}) error
 
-    GetNetAddr() *net.UDPAddr
+	SetNetAddr(addr *net.UDPAddr)
+	GetNetAddr() *net.UDPAddr
+	InitSubnet(ip Address, netmask uint8)
+	InitedSubnet() bool
 
-    HandlePacket(v buffer.View, udpAddr *net.UDPAddr)
+	HandlePacket(v buffer.View, udpAddr *net.UDPAddr)
 }
 
 // ErrorOption is used in GetSockOpt to specify that the last error reported by
@@ -389,12 +392,12 @@ type Stack interface {
 	// stack.
 	CheckNetworkProtocol(protocol NetworkProtocolNumber) bool
 
-    GetPacket() *EndpointData
+	GetPacket() *EndpointData
 
-    NetAddrHash(a *net.UDPAddr) [6]byte
+	NetAddrHash(a *net.UDPAddr) [6]byte
 
-    GetConnectedTransportEndpointByHash(hash [6]byte) (*Endpoint, error)
-    RegisterConnectedTransportEndpoint(ep Endpoint) error
+	GetConnectedTransportEndpointByHash(hash [6]byte) (*Endpoint, error)
+	RegisterConnectedTransportEndpoint(ep Endpoint) error
 }
 
 // Stats holds statistics about the networking stack.

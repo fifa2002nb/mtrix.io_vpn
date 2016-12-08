@@ -519,14 +519,14 @@ func (s *sender) sendSegment(data *buffer.VectorisedView, flags byte, seq seqnum
 
 	if data == nil {
 		rcvNxt, rcvWnd := s.ep.rcv.getSendParams()
-		return s.ep.sendRaw(nil, flags, seq, rcvNxt, rcvWnd)
+		return s.ep.sendRaw(nil, flags, seq, rcvNxt, rcvWnd, s.ep.subnetIP, s.ep.subnetMask)
 	}
 
 	if len(data.Views()) > 1 {
 		panic("send path does not support views with multiple buffers")
 	}
 	rcvNxt, rcvWnd := s.ep.rcv.getSendParams()
-	if err := s.ep.sendRaw(data.First(), flags, seq, rcvNxt, rcvWnd); err != nil {
+	if err := s.ep.sendRaw(data.First(), flags, seq, rcvNxt, rcvWnd, s.ep.subnetIP, s.ep.subnetMask); err != nil {
 		return err
 	}
 

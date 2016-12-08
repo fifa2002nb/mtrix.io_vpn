@@ -11,8 +11,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"math/rand"
+	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
-    "mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/link/fdbased"
 	"mtrix.io_vpn/link/rawfile"
 	"mtrix.io_vpn/link/tun"
@@ -20,9 +20,9 @@ import (
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/transport/tcp"
 	"mtrix.io_vpn/waiter"
+	"net"
 	"os"
 	"time"
-    "net"
 )
 
 func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port uint16) error {
@@ -57,6 +57,30 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 	return nil
 }
 
+func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, linkID global.LinkEndpointID, NICID global.NICID) {
+	for {
+		timer := time.NewTimer(time.Second * 1)
+		<-timer.C
+		if clientEP.InitedSubnet() {
+			mtu, err := rawfile.GetMTU(tunName)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fd, err := tun.Open(tunName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			linkEP := stack.FindLinkEndpoint(linkID)
+			linkEP.SetMTU(mtu)
+			linkEP.SetFd(fd)
+			s.EnableNIC(NICID)
+			log.infof("[waitingForEnableNIC] enabled NIC:%v", NICID)
+			break
+		}
+	}
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
@@ -70,23 +94,14 @@ func main() {
 	// NIC and address.
 	s := stack.New([]string{mm.ProtocolName}, []string{tcp.ProtocolName})
 
-	mtu, err := rawfile.GetMTU(tunName)
-	if err != nil {
+	// fd and mtu inited by default value
+	linkID := fdbased.New(-1, -1, nil)
+	NICID := 1
+	if err := s.CreateDisabledNIC(NICID, linkID); err != nil {
 		log.Fatal(err)
 	}
-
-	fd, err := tun.Open(tunName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	linkID := fdbased.New(fd, mtu, nil)
-	if err := s.CreateNIC(1, linkID); err != nil {
-		log.Fatal(err)
-	}
-
 	// add default networkEndpoint 10.1.1.2
-	if err := s.AddAddress(1, mm.ProtocolNumber, global.Address("\x0A\x01\x01\x02")); err != nil {
+	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address("\x0A\x01\x01\x02")); err != nil {
 		log.Infof("%v", err)
 	}
 
@@ -110,15 +125,17 @@ func main() {
 	defer connectEP.Close()
 
 	// connect to 10.1.1.2:0
-    addrName := "115.29.175.52"
-    srv := net.ParseIP(addrName)
-    if err := s.AddAddress(1, mm.ProtocolNumber, global.Address(srv.To4())); err != nil {
+	addrName := "115.29.175.52"
+	srv := net.ParseIP(addrName)
+	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address(srv.To4())); err != nil {
 		log.Infof("%v", err)
 	}
 
-	if err := connectEP.Connect(global.FullAddress{1, global.Address(srv.To4()), 0}); err != nil {
+	if err := connectEP.Connect(global.FullAddress{NICID, global.Address(srv.To4()), 0}); err != nil {
 		log.Infof("%v", err)
 	}
+
+	go LazyEnableNIC(connectEP, s, tunName, linkID, NICID)
 
 	connectToNet(connectEP, s, addrName, 40000)
 }
