@@ -63,17 +63,25 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		timer := time.NewTimer(time.Second * 1)
 		<-timer.C
 		if clientEP.InitedSubnet() {
-			if err := s.AddAddress(NICID, mm.ProtocolNumber, clientEP.GetSubnetIP()); err != nil {
+			if err := s.AddAddress(NICID, mm.ProtocolNumber, clientEP.GetSubnetIP()); nil != err {
 				log.Infof("%v", err)
+			}
+			if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil != err {
+				clientEP.Close()
+				log.Infof("setTunIP err:%v", err)
 			}
 			mtu, err := rawfile.GetMTU(tunName)
 			if err != nil {
-				log.Fatal(err)
+				clientEP.Close()
+				log.Infof("getMTU err:%v", err)
+				return
 			}
 
 			fd, err := tun.Open(tunName)
 			if err != nil {
-				log.Fatal(err)
+				clientEP.Close()
+				log.Infof("openTun err:%v", err)
+				return
 			}
 			linkEP := stack.FindLinkEndpoint(linkID)
 			linkEP.SetMTU(uint32(mtu))
@@ -104,12 +112,6 @@ func main() {
 	if err := s.CreateDisabledNIC(NICID, linkID); err != nil {
 		log.Fatal(err)
 	}
-	// add default networkEndpoint 10.1.1.2
-	/*
-		    if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address("\x0A\x01\x01\x02")); err != nil {
-				log.Infof("%v", err)
-			}
-	*/
 
 	// Add default route. 10.1.1.0/24
 	s.SetRouteTable([]global.Route{

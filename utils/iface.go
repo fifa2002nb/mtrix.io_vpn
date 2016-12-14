@@ -24,9 +24,23 @@ func SetTunIP(tunName string, ip net.IP, subnet *net.IPNet) error {
 	copy([]byte(peer), []byte(ip))
 	peer[3]++
 
-	sargs := fmt.Sprintf("addr add dev %s local %s peer %s", tunName, ip, peer)
+	sargs := fmt.Sprintf("ip tuntap add mode tun %s", tunName)
 	args := strings.Split(sargs, " ")
 	cmd := exec.Command("ip", args...)
+	if err := cmd.Run(); nil != err {
+		return err
+	}
+
+	sargs = fmt.Sprintf("link set dev %s up mtu 1500 qlen 100", tunName)
+	args = strings.Split(sargs, " ")
+	cmd = exec.Command("ip", args...)
+	if err := cmd.Run(); nil != err {
+		return err
+	}
+
+	sargs = fmt.Sprintf("addr add dev %s local %s peer %s", tunName, ip, peer)
+	args = strings.Split(sargs, " ")
+	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		return err
 	}

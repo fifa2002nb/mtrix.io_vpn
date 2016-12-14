@@ -141,7 +141,7 @@ type endpoint struct {
 
 	clientIP global.Address
 	addrsArr []*net.UDPAddr
-	addrsMap map[[6]byte]*net.UDPAddr
+	addrsMap map[[6]byte]*net.UDPAddr // hash(ip+port) -> *net.UDPAddr
 	addrMu   sync.Mutex
 	addrIdx  int
 
