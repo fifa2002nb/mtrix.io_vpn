@@ -272,8 +272,9 @@ type Endpoint interface {
 	// GetSockOpt gets a socket option.
 	GetSockOpt(interface{}) error
 
-	SetNetAddr(addr *net.UDPAddr)
-	GetNetAddr() *net.UDPAddr
+	GetClientIP() Address
+	PushNetAddr(addr *net.UDPAddr)
+	PopNetAddr() *net.UDPAddr
 	InitSubnet(ip Address, netmask uint8)
 	InitedSubnet() bool
 
@@ -377,12 +378,12 @@ type Stack interface {
 
 	// CreateNIC creates a NIC with the provided id and link-layer sender.
 	CreateNIC(id NICID, linkEndpoint LinkEndpointID) error
-    
-    CreateDisabledNIC(id NICID, linkEP LinkEndpointID) error
 
-    EnableNIC(id NICID) error
+	CreateDisabledNIC(id NICID, linkEP LinkEndpointID) error
 
-    EnableIPPool(addr string) error
+	EnableNIC(id NICID) error
+
+	EnableIPPool(addr string) error
 
 	// AddAddress adds a new network-layer address to the specified NIC.
 	AddAddress(id NICID, protocol NetworkProtocolNumber, addr Address) error
@@ -402,8 +403,9 @@ type Stack interface {
 
 	NetAddrHash(a *net.UDPAddr) [6]byte
 
-	GetConnectedTransportEndpointByHash(hash [6]byte) (*Endpoint, error)
+	GetConnectedTransportEndpoint(ip global.Address) (*Endpoint, error)
 	RegisterConnectedTransportEndpoint(ep Endpoint) error
+	UnregisterConnectedTransportEndpoint(ep global.Endpoint)
 }
 
 // Stats holds statistics about the networking stack.

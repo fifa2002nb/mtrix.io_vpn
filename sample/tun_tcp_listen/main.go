@@ -51,8 +51,8 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 		if nil != err {
 			log.Errorf("%v", err)
 		} else {
-			hash := s.NetAddrHash(addr)
-			if ep, err := s.GetConnectedTransportEndpointByHash(hash); nil == err { //数据传输
+			clientIP := global.Address(addr.IP.To4())
+			if ep, err := s.GetConnectedTransportEndpoint(clientIP); nil == err { //数据传输
 				(*ep).HandlePacket(buffer.View(buf[:plen]), addr)
 			} else { //建立连接
 				listenEP.HandlePacket(buffer.View(buf[:plen]), addr)
@@ -76,9 +76,9 @@ func main() {
 	// NIC and address.
 	s := stack.New([]string{mm.ProtocolName}, []string{tcp.ProtocolName})
 
-    if err := s.EnableIPPool("10.1.1.1/24"); nil != err {
-        log.Fatal(err)
-    }
+	if err := s.EnableIPPool("10.1.1.1/24"); nil != err {
+		log.Fatal(err)
+	}
 
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {

@@ -139,7 +139,12 @@ type endpoint struct {
 	rcv *receiver
 	snd *sender
 
-	addr         *net.UDPAddr
+	clientIP global.Address
+	addrsArr []*net.UDPAddr
+	addrsMap map[[6]byte]*net.UDPAddr
+	addrMu   sync.Mutex
+	addrIdx  uint8
+
 	subnetInited bool
 	subnetIP     global.Address
 	subnetMask   uint8
@@ -158,6 +163,10 @@ func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, wait
 		notifyChan:   make(chan struct{}, 1),
 		noDelay:      true,
 		reuseAddr:    true,
+		clientIP:     global.Address("\x00\x00\x00\x00"),
+		addrsArr:     make([]*net.UDPAddr, 0),
+		addrsMap:     make(map[[6]byte]*net.UDPAddr),
+		addrIdx:      0,
 		subnetInited: false,
 		subnetIP:     global.Address("\x00\x00\x00\x00"),
 		subnetMask:   0,
@@ -176,12 +185,34 @@ func (e *endpoint) InitedSubnet() bool {
 	return e.subnetInited
 }
 
-func (e *endpoint) SetNetAddr(addr *net.UDPAddr) {
-	e.addr = addr
+func (e *endpoint) GetClientIP() global.Address {
+	return e.clientIP
 }
 
-func (e *endpoint) GetNetAddr() *net.UDPAddr {
-	return e.addr
+func (e *endpoint) PushNetAddr(addr *net.UDPAddr) {
+	if nil == addr {
+		return
+	}
+	hash := e.stack.NetAddrHash(addr)
+	if _, ok := e.addrsMap[hash]; !ok {
+		e.addrMu.Lock()
+		e.addrsArr = append(e.addrsArr, addr)
+		e.addrsMap[hash] = addr
+		e.addrMu.Unlock()
+	}
+}
+
+func (e *endpoint) PopNetAddr() *net.UDPAddr {
+	size := len(e.addrsArr)
+	if 0 == size {
+		return nil
+	}
+	if e.addrIdx >= size {
+		e.addrIdx = 0
+	}
+	addr := e.addrsArr[e.addrIdx]
+	e.addrIdx++
+	return addr
 }
 
 // Readiness returns the current readiness of the endpoint. For example, if
@@ -307,7 +338,7 @@ func (e *endpoint) cleanup() {
 
 	e.route.Release()
 	// unregister connectedTransportEndpoint hashtable's item
-	e.stack.UnregisterConnectedTransportEndpoint(e.stack.NetAddrHash(e.addr))
+	e.stack.UnregisterConnectedTransportEndpoint(e)
 	// release endpoint's subnetIP
 	e.stack.ReleaseIP(e.subnetIP)
 }
@@ -400,7 +431,7 @@ func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, e
 
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&e.route, e.id, &vv, e.addr)
+	s := newSegment(&e.route, e.id, &vv, e.PopNetAddr())
 
 	e.sndBufMu.Lock()
 
@@ -955,6 +986,9 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 		e.stack.RemoveAddress(e.boundNICID, remote)
 		return
 	}
+
+	e.PushNetAddr(udpAddr) // push newAddr to addrsArr & addrsMap
+
 	// Send packet to worker goroutine.
 	select {
 	case e.segmentChan <- s:

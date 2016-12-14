@@ -150,7 +150,7 @@ func (h *handshake) synSentState(s *segment) error {
 	// but resend our own SYN and wait for it to be acknowledged in the
 	// SYN-RCVD state.
 	h.state = handshakeSynRcvd
-	sendSynTCP(h.ep.stack, h.ep.addr, &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+	sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 
 	return nil
 }
@@ -190,7 +190,7 @@ func (h *handshake) synRcvdState(s *segment) error {
 			return err
 		}
 
-		sendSynTCP(h.ep.stack, h.ep.addr, &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+		sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 		return nil
 	}
 
@@ -215,7 +215,7 @@ func (h *handshake) execute() error {
 	// Send the initial SYN segment and loop until the handshake is
 	// completed.
 	log.Infof("[execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
-	sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+	sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 	for h.state != handshakeCompleted {
 		select {
 		case <-rt.C:
@@ -225,7 +225,7 @@ func (h *handshake) execute() error {
 			}
 			rt.Reset(timeOut)
 			log.Infof("[execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
-			sendSynTCP(h.ep.stack, h.ep.addr, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+			sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 
 		case s := <-h.ep.segmentChan:
 			h.sndWnd = s.window
@@ -395,7 +395,7 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Transpo
 
 // sendRaw sends a TCP segment to the endpoint's peer.
 func (e *endpoint) sendRaw(data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
-	return sendTCP(e.stack, e.addr, &e.route, e.id, data, flags, seq, ack, rcvWnd, subnetIP, subnetMask)
+	return sendTCP(e.stack, e.PopNetAddr(), &e.route, e.id, data, flags, seq, ack, rcvWnd, subnetIP, subnetMask)
 }
 
 func (e *endpoint) handleWrite(ok bool) {

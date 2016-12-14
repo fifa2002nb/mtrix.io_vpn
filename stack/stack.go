@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
-	"mtrix.io_vpn/utils"
 	"mtrix.io_vpn/ports"
+	"mtrix.io_vpn/utils"
 	"mtrix.io_vpn/waiter"
 	"net"
 	"sync"
@@ -72,7 +72,7 @@ func New(network []string, transport []string) global.Stack {
 		ToNetChan:          make(chan *global.EndpointData, 2048), // fixed
 		//startPort:          uint16(40000),                 // fixed
 		//portNum:            uint16(1),                     // fixed
-		ConnectedTransportEndpoints: make(map[[6]byte]global.Endpoint),
+		ConnectedTransportEndpoints: make(map[global.Address]global.Endpoint),
 		//IPPool: utils.NewIPPool(addr),
 	}
 
@@ -105,11 +105,11 @@ func New(network []string, transport []string) global.Stack {
 }
 
 func (s *Stack) EnableIPPool(addr string) error {
-    s.IPPool = utils.NewIPPool(addr)
-    if nil == s.IPPool {
-        return errors.New("init IPPool failed.")        
-    }
-    return nil
+	s.IPPool = utils.NewIPPool(addr)
+	if nil == s.IPPool {
+		return errors.New("init IPPool failed.")
+	}
+	return nil
 }
 
 func (s *Stack) GetPacket() *global.EndpointData {
@@ -381,15 +381,15 @@ func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
 	}
 	s.tmu.RLock()
 	defer s.tmu.RUnlock()
-	s.ConnectedTransportEndpoints[s.NetAddrHash(ep.GetNetAddr())] = ep
+	s.ConnectedTransportEndpoints[ep.GetClientIP()] = ep
 	return nil
 }
 
 // for udpconn
-func (s *Stack) UnregisterConnectedTransportEndpoint(hash [6]byte) {
-	if _, ok := s.ConnectedTransportEndpoints[hash]; ok {
+func (s *Stack) UnregisterConnectedTransportEndpoint(ep global.Endpoint) {
+	if _, ok := s.ConnectedTransportEndpoints[ep.GetClientIP]; ok {
 		s.tmu.RLock()
-		delete(s.ConnectedTransportEndpoints, hash)
+		delete(s.ConnectedTransportEndpoints, ep.GetClientIP)
 		s.tmu.RUnlock()
 	}
 }
@@ -405,8 +405,8 @@ func (s *Stack) NetAddrHash(a *net.UDPAddr) [6]byte {
 }
 
 // for udpconn
-func (s *Stack) GetConnectedTransportEndpointByHash(hash [6]byte) (*global.Endpoint, error) {
-	if ep, ok := s.ConnectedTransportEndpoints[hash]; ok {
+func (s *Stack) GetConnectedTransportEndpoint(ip global.Address) (*global.Endpoint, error) {
+	if ep, ok := s.ConnectedTransportEndpoints[ip]; ok {
 		return &ep, nil
 	} else {
 		return nil, errors.New(fmt.Sprintf("connection %v does not existed.", hash))

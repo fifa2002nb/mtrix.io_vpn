@@ -202,17 +202,18 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 		return nil, err
 	}
 
-	n.addr = s.udpAddr
+	//n.addr = s.udpAddr
+	n.clientIP = global.Address(s.udpAddr.IP.To4())
 	if err := n.stack.RegisterConnectedTransportEndpoint(n); nil != err {
 		return nil, err
 	}
 	// assign endpoint's subnetIP when tcp handshaking
 	cltIP, err := n.stack.NextIP()
-    if nil != err {
+	if nil != err {
 		return nil, err
 	}
-    subnetIP := global.Address(cltIP.IP.To4())
-    subnetMask, _ := cltIP.Mask.Size()
+	subnetIP := global.Address(cltIP.IP.To4())
+	subnetMask, _ := cltIP.Mask.Size()
 	n.InitSubnet(subnetIP, uint8(subnetMask))
 
 	n.isRegistered = true
