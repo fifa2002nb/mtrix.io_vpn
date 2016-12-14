@@ -13,6 +13,8 @@ import (
 10.1.1.0        10.1.1.2        255.255.255.0   UG    0      0        0 tun0
 10.1.1.2        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
 */
+// ip tuntap add mode tun tun0
+// ip link set dev tun0 up mtu 1500 qlen 100
 // ip addr add dev tun0 local 10.1.1.1 peer 10.1.1.2
 // ip route add 10.1.1.0/24 via 10.1.1.2 dev tun0
 func SetTunIP(tunName string, ip net.IP, subnet *net.IPNet) error {
