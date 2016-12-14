@@ -82,7 +82,7 @@ type TCP []byte
 
 const (
 	// TCPMinimumSize is the minimum size of a valid TCP packet.
-	TCPMinimumSize = 25
+	TCPMinimumSize = 28
 
 	// TCPProtocolNumber is TCP's transport protocol number.
 	TCPProtocolNumber global.TransportProtocolNumber = 6

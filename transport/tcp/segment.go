@@ -5,8 +5,8 @@
 package tcp
 
 import (
-    "mtrix.io_vpn/global"
 	"mtrix.io_vpn/buffer"
+	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/seqnum"
 	"mtrix.io_vpn/stack"

@@ -185,6 +185,14 @@ func (e *endpoint) InitedSubnet() bool {
 	return e.subnetInited
 }
 
+func (e *endpoint) GetSubnetIP() global.Address {
+	return e.subnetIP
+}
+
+func (e *endpoint) GetSubnetMask() uint8 {
+	return e.subnetMask
+}
+
 func (e *endpoint) GetClientIP() global.Address {
 	return e.clientIP
 }

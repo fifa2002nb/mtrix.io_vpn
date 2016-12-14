@@ -272,6 +272,9 @@ type Endpoint interface {
 	// GetSockOpt gets a socket option.
 	GetSockOpt(interface{}) error
 
+	GetSubnetIP() Address
+	GetSubnetMask() uint8
+
 	GetClientIP() Address
 	PushNetAddr(addr *net.UDPAddr)
 	PopNetAddr() *net.UDPAddr

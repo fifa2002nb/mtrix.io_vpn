@@ -75,7 +75,7 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 			linkEP.SetMTU(uint32(mtu))
 			linkEP.SetFd(fd)
 			s.EnableNIC(NICID)
-			log.Infof("[waitingForEnableNIC] enabled NIC:%v", NICID)
+			log.Infof("[waitingForEnableNIC] enabled NIC:%v subnetIP:%v subnetMask:%v", NICID, clientEP.GetSubnetIP(), clientEP.GetSubnetMask())
 			break
 		}
 	}
