@@ -22,6 +22,7 @@ import (
 	"mtrix.io_vpn/waiter"
 	"net"
 	"os"
+	"os/signal"
 	"time"
 )
 

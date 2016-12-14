@@ -22,6 +22,7 @@ import (
 	"mtrix.io_vpn/waiter"
 	"net"
 	"os"
+	"os/signal"
 	"time"
 )
 
@@ -159,7 +160,6 @@ func main() {
 			killing = true
 			go func() {
 				log.Info("Interrupt: closing down...")
-				connectEP.Close()
 				log.Info("done")
 				os.Exit(1)
 			}()
