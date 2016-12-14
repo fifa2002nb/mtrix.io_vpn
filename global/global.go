@@ -406,9 +406,9 @@ type Stack interface {
 
 	NetAddrHash(a *net.UDPAddr) [6]byte
 
-	GetConnectedTransportEndpoint(ip global.Address) (*Endpoint, error)
+	GetConnectedTransportEndpoint(ip Address) (*Endpoint, error)
 	RegisterConnectedTransportEndpoint(ep Endpoint) error
-	UnregisterConnectedTransportEndpoint(ep global.Endpoint)
+	UnregisterConnectedTransportEndpoint(ep Endpoint)
 }
 
 // Stats holds statistics about the networking stack.

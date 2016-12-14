@@ -143,7 +143,7 @@ type endpoint struct {
 	addrsArr []*net.UDPAddr
 	addrsMap map[[6]byte]*net.UDPAddr
 	addrMu   sync.Mutex
-	addrIdx  uint8
+	addrIdx  int
 
 	subnetInited bool
 	subnetIP     global.Address

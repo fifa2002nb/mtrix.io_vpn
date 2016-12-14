@@ -295,7 +295,7 @@ func (e *endpoint) handleListenSegment(ctx *listenContext, s *segment) {
 			go e.handleSynSegment(ctx, s, mss)
 		} else {
 			cookie := ctx.createCookie(s.id, s.sequenceNumber, encodeMSS(mss))
-			sendSynTCP(e.stack, e.addr, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd, e.subnetIP, e.subnetMask)
+			sendSynTCP(e.stack, e.PopNetAddr(), &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd, e.subnetIP, e.subnetMask)
 		}
 	case flagAck:
 		if data, ok := ctx.isCookieValid(s.id, s.ackNumber-1, s.sequenceNumber-1); ok && int(data) < len(mssTable) {
