@@ -142,5 +142,24 @@ func main() {
 
 	go LazyEnableNIC(connectEP, s, tunName, linkID, NICID)
 
+	go func() {
+		sc := make(chan os.Signal, 1)
+		signal.Notify(sc, os.Interrupt)
+		killing := false
+		for range sc {
+			if killing {
+				log.Info("Second interrupt: exiting")
+				os.Exit(1)
+			}
+			killing = true
+			go func() {
+				log.Info("Interrupt: closing down...")
+				connectEP.Close()
+				log.Info("done")
+				os.Exit(1)
+			}()
+		}
+	}()
+
 	connectToNet(connectEP, s, addrName, 40000)
 }
