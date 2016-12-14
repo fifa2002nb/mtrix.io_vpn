@@ -56,7 +56,7 @@ type Stack struct {
 	//portNum   uint16
 	tmu                         sync.RWMutex
 	ToNetChan                   chan *global.EndpointData
-	ConnectedTransportEndpoints map[[6]byte]global.Endpoint
+	ConnectedTransportEndpoints map[global.Address]global.Endpoint
 
 	*utils.IPPool
 }
@@ -376,9 +376,6 @@ func (s *Stack) SetPromiscuousMode(nicID global.NICID, enable bool) error {
 
 // for udpconn
 func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
-	if nil == ep.GetNetAddr() {
-		return errors.New("nil == ep.GetAddr()")
-	}
 	s.tmu.RLock()
 	defer s.tmu.RUnlock()
 	s.ConnectedTransportEndpoints[ep.GetClientIP()] = ep
@@ -387,9 +384,9 @@ func (s *Stack) RegisterConnectedTransportEndpoint(ep global.Endpoint) error {
 
 // for udpconn
 func (s *Stack) UnregisterConnectedTransportEndpoint(ep global.Endpoint) {
-	if _, ok := s.ConnectedTransportEndpoints[ep.GetClientIP]; ok {
+	if _, ok := s.ConnectedTransportEndpoints[ep.GetClientIP()]; ok {
 		s.tmu.RLock()
-		delete(s.ConnectedTransportEndpoints, ep.GetClientIP)
+		delete(s.ConnectedTransportEndpoints, ep.GetClientIP())
 		s.tmu.RUnlock()
 	}
 }
@@ -409,7 +406,7 @@ func (s *Stack) GetConnectedTransportEndpoint(ip global.Address) (*global.Endpoi
 	if ep, ok := s.ConnectedTransportEndpoints[ip]; ok {
 		return &ep, nil
 	} else {
-		return nil, errors.New(fmt.Sprintf("connection %v does not existed.", hash))
+		return nil, errors.New(fmt.Sprintf("connection %v does not existed.", ip))
 	}
 }
 
