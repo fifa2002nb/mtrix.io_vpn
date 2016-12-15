@@ -990,7 +990,7 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
-	log.Infof("[HandlePacket] %v", v)
+	log.Infof("[<=HandlePacket] %v", v)
 	if nil == udpAddr {
 		return
 	}

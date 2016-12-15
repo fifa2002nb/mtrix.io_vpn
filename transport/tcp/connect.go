@@ -386,6 +386,7 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Transpo
 	//p := uint16(rand.Intn(s.portNum)) // rand port
 	hview := hdr.View()
 	d := hview.Merge(data)
+	log.Infof("[=>sendTCP] %v", d)
 	s.ToNetChan <- &global.EndpointData{
 		Data: d,
 		Addr: addr,
