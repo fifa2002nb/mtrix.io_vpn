@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"mtrix.io_vpn/global"
 	"net"
 	"os/exec"
 	"strings"
@@ -25,7 +26,7 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 	}
 
 	ip = ip.To4()
-	if subnet[3]%2 == 0 {
+	if ip[3]%2 == 0 {
 		return errors.New("Invalid ip address.")
 	}
 
