@@ -19,8 +19,7 @@ import (
 // ip addr add dev tun0 local 10.1.1.1 peer 10.1.1.2
 // ip route add 10.1.1.0/24 via 10.1.1.2 dev tun0
 func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
-	ipStr := fmt.Sprintf("%d.%d.%d.%d/%d", subnetIP[0], subnetIP[1], subnetIP[2], subnetIP[3], subnetMask)
-	ip, subnet, err := net.ParseCIDR(ipStr)
+	ip, subnet, err := ParseCIDR(subnetIP, subnetMask)
 	if nil != err {
 		return err
 	}
@@ -62,4 +61,9 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 		return err
 	}
 	return nil
+}
+
+func ParseCIDR(subnetIP global.Address, subnetMask uint8) (net.IP, *net.IPNet, error) {
+	ipStr := fmt.Sprintf("%d.%d.%d.%d/%d", subnetIP[0], subnetIP[1], subnetIP[2], subnetIP[3], subnetMask)
+	return net.ParseCIDR(ipStr)
 }

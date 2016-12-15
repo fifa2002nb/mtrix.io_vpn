@@ -64,24 +64,30 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		timer := time.NewTimer(time.Second * 1)
 		<-timer.C
 		if clientEP.InitedSubnet() {
-			if err := s.AddAddress(NICID, mm.ProtocolNumber, clientEP.GetSubnetIP()); nil != err {
-				log.Infof("%v", err)
+			if localIP, _, err := utils.ParseCIDR(clientEP.GetSubnetIP, clientEP.GetSubnetMask); nil != err {
+				if err := s.AddAddress(NICID, mm.ProtocolNumber, clientEP.GetSubnetIP()); nil != err {
+					clientEP.Close()
+					log.Errorf("%v", err)
+				}
+			} else {
+				clientEP.Close()
+				log.Errorf("%v", err)
 			}
 			if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil != err {
 				clientEP.Close()
-				log.Infof("setTunIP err:%v", err)
+				log.Errorf("setTunIP err:%v", err)
 			}
 			mtu, err := rawfile.GetMTU(tunName)
 			if err != nil {
 				clientEP.Close()
-				log.Infof("getMTU err:%v", err)
+				log.Errorf("getMTU err:%v", err)
 				return
 			}
 
 			fd, err := tun.Open(tunName)
 			if err != nil {
 				clientEP.Close()
-				log.Infof("openTun err:%v", err)
+				log.Errorf("openTun err:%v", err)
 				return
 			}
 			linkEP := stack.FindLinkEndpoint(linkID)
