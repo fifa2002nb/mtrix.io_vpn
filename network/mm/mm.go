@@ -156,6 +156,8 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 }
 
 func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
+	e.ParsePacketHeaders(vv.ToView()) // for test
+
 	h := header.IPv4(vv.First())
 	if !h.IsValid(vv.Size()) {
 		return
