@@ -19,6 +19,7 @@ import (
 	"mtrix.io_vpn/network/mm"
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/transport/tcp"
+	"mtrix.io_vpn/utils"
 	"mtrix.io_vpn/waiter"
 	"net"
 	"os"

@@ -17,11 +17,18 @@ import (
 // ip link set dev tun0 up mtu 1500 qlen 100
 // ip addr add dev tun0 local 10.1.1.1 peer 10.1.1.2
 // ip route add 10.1.1.0/24 via 10.1.1.2 dev tun0
-func SetTunIP(tunName string, ip net.IP, subnet *net.IPNet) error {
+func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
+	ipStr := fmt.Sprintf("%d.%d.%d.%d/%d", subnetIP[0], subnetIP[1], subnetIP[2], subnetIP[3], subnetMask)
+	ip, subnet, err := net.ParseCIDR(ipStr)
+	if nil != err {
+		return err
+	}
+
 	ip = ip.To4()
-	if ip[3]%2 == 0 {
+	if subnet[3]%2 == 0 {
 		return errors.New("Invalid ip address.")
 	}
+
 	peer := net.IP(make([]byte, 4))
 	copy([]byte(peer), []byte(ip))
 	peer[3]++
