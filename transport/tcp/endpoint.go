@@ -365,7 +365,11 @@ func (e *endpoint) cleanup() {
 	// remove peer's addr
 	peer := []byte(e.subnetIP)
 	peer[3]++
+	// delete subnetIP addr
 	e.stack.RemoveAddress(e.boundNICID, global.Address(peer))
+	// delete realIP addr
+	e.stack.RemoveAddress(e.boundNICID, e.clientIP)
+
 	// unbind peer from stack
 	e.UnBindFStack(global.Address(peer))
 }
@@ -790,14 +794,16 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 }
 
 func (e *endpoint) BindToStack(Addr global.Address) error {
-	e.id.LocalAddress = Addr
-	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id, e)
+	newid := e.id
+	newid.LocalAddress = Addr
+	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, newid, e)
 	return err
 }
 
 func (e *endpoint) UnBindFStack(Addr global.Address) {
-	e.id.LocalAddress = Addr
-	e.stack.UnregisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id)
+	newid := e.id
+	newid.LocalAddress = Addr
+	e.stack.UnregisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, newid)
 }
 
 // ConnectEndpoint is not supported.

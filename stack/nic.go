@@ -204,8 +204,8 @@ func (n *NIC) RemoveAddress(addr global.Address) error {
 	r.holdsInsertRef = false
 	n.mu.Unlock()
 
-	r.decRef()
-
+	//r.decRef()  // template plan
+	n.removeEndpointLocked(r)
 	return nil
 }
 
