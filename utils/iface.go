@@ -37,7 +37,7 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 	args := strings.Split(sargs, " ")
 	cmd := exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
-		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+		//return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
 
 	sargs = fmt.Sprintf("link set dev %s up mtu 1500 qlen 100", tunName)
@@ -100,9 +100,9 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
 
-	sargs := fmt.Sprintf("tuntap del mode tun %s", tunName)
-	args := strings.Split(sargs, " ")
-	cmd := exec.Command("ip", args...)
+	sargs = fmt.Sprintf("tuntap del mode tun %s", tunName)
+	args = strings.Split(sargs, " ")
+	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}

@@ -68,6 +68,9 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 				localIP = localIP.To4()
 				localIP[3]++
 				if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address(localIP)); nil == err {
+					if err := clientEP.BindToStack(global.Address(localIP)); nil != err {
+						log.Errorf("bind endpoint to stack err:%v", err)
+					}
 					if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil == err {
 						mtu, err := rawfile.GetMTU(tunName)
 						if err != nil {
@@ -171,14 +174,15 @@ func main() {
 				log.Info("Interrupt: closing down...")
 				// close connection
 				connectEP.Close()
-				time.Sleep(5 * time.Second)
+				time.Sleep(1 * time.Second)
 				// close tun0 fd
 				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
 					tun.Close(linkEP.GetFd())
 				}
+				time.Sleep(1 * time.Second)
 				// shut down tun networkCard
-				if err := utils.CleanTunIP(tunName); nil != err {
-					log.Errorf("cleanTunIP err:%v", err)
+				if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask()); nil != err {
+					log.Errorf("%v", err)
 				}
 				log.Info("done")
 				os.Exit(1)

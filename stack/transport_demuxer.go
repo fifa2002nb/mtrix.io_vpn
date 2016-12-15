@@ -127,6 +127,6 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true
 	}
-	log.Errorf("[reverseDeliverPacket] %v matched endpoint didn't found.", id)
+	log.Errorf("[reverseDeliverPacket]  %v didn't match any endpoint.", id)
 	return false
 }

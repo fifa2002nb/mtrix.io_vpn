@@ -770,6 +770,12 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 	return global.ErrConnectStarted
 }
 
+func (*endpoint) BindToStack(Addr global.Address) error {
+	e.id.LocalAddress = Addr
+	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id, e)
+	return err
+}
+
 // ConnectEndpoint is not supported.
 func (*endpoint) ConnectEndpoint(global.Endpoint) error {
 	return global.ErrInvalidEndpointState

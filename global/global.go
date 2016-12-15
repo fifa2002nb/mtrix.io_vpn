@@ -282,6 +282,7 @@ type Endpoint interface {
 	InitedSubnet() bool
 
 	HandlePacket(v buffer.View, udpAddr *net.UDPAddr)
+	BindToStack(Addr Address) error
 }
 
 // ErrorOption is used in GetSockOpt to specify that the last error reported by
