@@ -146,6 +146,7 @@ type LinkEndpoint interface {
 	// for dynamic adjust
 	SetMTU(mtu uint32)
 	SetFd(fd int)
+	GetFd() int
 	// MaxHeaderLength returns the maximum size the data link (and
 	// lower level layers combined) headers can have. Higher levels use this
 	// information to reserve space in the front of the packets they're

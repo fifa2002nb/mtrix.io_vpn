@@ -38,3 +38,10 @@ func Open(name string) (int, error) {
 
 	return fd, nil
 }
+
+func Close(fd int) {
+	if 0 >= fd {
+		return
+	}
+	syscall.Close(fd)
+}

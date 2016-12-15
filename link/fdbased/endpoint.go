@@ -78,6 +78,10 @@ func (e *endpoint) SetFd(fd int) {
 	e.fd = fd
 }
 
+func (e *endpoint) GetFd() int {
+	return e.fd
+}
+
 // MaxHeaderLength returns the maximum size of the header. Given that it
 // doesn't have a header, it just returns 0.
 func (*endpoint) MaxHeaderLength() uint16 {

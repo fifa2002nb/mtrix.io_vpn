@@ -63,6 +63,17 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 	return nil
 }
 
+// ip tuntap del mode tun tun0
+func CleanTunIP(tunName string) error {
+	sargs := fmt.Sprintf("tuntap del mode tun %s", tunName)
+	args := strings.Split(sargs, " ")
+	cmd := exec.Command("ip", args...)
+	if err := cmd.Run(); nil != err {
+		return err
+	}
+	return nil
+}
+
 func ParseCIDR(subnetIP global.Address, subnetMask uint8) (net.IP, *net.IPNet, error) {
 	ipStr := fmt.Sprintf("%d.%d.%d.%d/%d", subnetIP[0], subnetIP[1], subnetIP[2], subnetIP[3], subnetMask)
 	return net.ParseCIDR(ipStr)

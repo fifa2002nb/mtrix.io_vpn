@@ -169,7 +169,17 @@ func main() {
 			killing = true
 			go func() {
 				log.Info("Interrupt: closing down...")
+				// close connection
 				connectEP.Close()
+				time.Sleep(5 * time.Second)
+				// close tun0 fd
+				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
+					tun.Close(linkEP.GetFd())
+				}
+				// shut down tun networkCard
+				if err := utils.CleanTunIP(tunName); nil != err {
+					log.Errorf("cleanTunIP err:%v", err)
+				}
 				log.Info("done")
 				os.Exit(1)
 			}()
