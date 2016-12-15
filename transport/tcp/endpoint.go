@@ -179,16 +179,18 @@ func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) error {
 		e.subnetMask = netmask
 
 		// register peer's addr
-		ip[3]++
-		if err := e.stack.AddAddress(e.boundNICID, e.netProto, ip); nil != err {
+		peer := []byte(ip)
+		peer[3]++
+		if err := e.stack.AddAddress(e.boundNICID, e.netProto, peer); nil != err {
 			return err
 		}
 		// RegisterTransportEndpoint by peer's addr
-		if err := e.BindToStack(ip); nil != err {
+		if err := e.BindToStack(peer); nil != err {
 			return err
 		}
 		e.subnetInited = true
 	}
+	return nil
 }
 
 func (e *endpoint) InitedSubnet() bool {
