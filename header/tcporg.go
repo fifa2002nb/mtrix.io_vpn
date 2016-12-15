@@ -10,7 +10,7 @@ import (
 	"mtrix.io_vpn/global"
 )
 
-const (
+/*const (
 	srcPort     = 0
 	dstPort     = 2
 	seqNum      = 4
@@ -20,7 +20,7 @@ const (
 	winSize     = 14
 	tcpChecksum = 16
 	urgentPtr   = 18
-)
+)*/
 
 // Flags that may be set in a TTP segment.
 const (
