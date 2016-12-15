@@ -1010,7 +1010,6 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
 func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
-	log.Infof("[<=HandlePacket] %v", v)
 	if nil == udpAddr {
 		return
 	}
@@ -1023,6 +1022,9 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
 	id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
+
+	log.Infof("[<=HandlePacket] %v ID:%v", v, id)
+
 	s := newSegment(&route, id, &vv, udpAddr)
 	if !s.parse() {
 		// TODO: Inform the stack that the packet is malformed.
