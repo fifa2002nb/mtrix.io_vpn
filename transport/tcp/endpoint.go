@@ -770,7 +770,7 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 	return global.ErrConnectStarted
 }
 
-func (*endpoint) BindToStack(Addr global.Address) error {
+func (e *endpoint) BindToStack(Addr global.Address) error {
 	e.id.LocalAddress = Addr
 	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id, e)
 	return err

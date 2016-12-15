@@ -72,7 +72,13 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 	nv := buffer.NewView(len(v))
 	copy(nv, v)
-    
+
+	var src global.Address
+	var dst global.Address
+	var srcPort uint16
+	var dstPort uint16
+	var p global.TransportProtocolNumber
+
 	// parse ip header
 	if header.IPv4Version == header.IPVersion(nv) {
 		h := header.IPv4(nv)
@@ -85,37 +91,52 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 			log.Errorf("[ParsePacketHeaders] now we don't support fragmentation. reject it.")
 			return nil
 		}
-        src, dst := h.SourceAddress(), h.DestinationAddress() 
-        log.Infof("[ParsePacketHeaders] ipv4 src:%v dst:%v", src, dst)
-        hlen := int(h.HeaderLength())
-        tlen := int(h.TotalLength())
-        nv.TrimFront(hlen)
-        nv.CapLength(tlen - hlen)
+		src, dst = h.SourceAddress(), h.DestinationAddress()
+		hlen := int(h.HeaderLength())
+		tlen := int(h.TotalLength())
+		nv.TrimFront(hlen)
+		nv.CapLength(tlen - hlen)
+		p = global.TransportProtocolNumber(h.Protocol())
 	} else if header.IPv6Version == header.IPVersion(nv) {
 		h := header.IPv6(nv)
 		if !h.IsValid(len(nv)) {
 			log.Errorf("[ParsePacketHeaders] !ipv6.IsValid(%v)", len(nv))
 			return nil
 		}
-        src, dst := h.SourceAddress(), h.DestinationAddress() 
-        log.Infof("[ParsePacketHeaders] ipv6 src:%v dst:%v", src, dst)
-        nv.TrimFront(header.IPv6MinimumSize)
+		src, dst = h.SourceAddress(), h.DestinationAddress()
+		nv.TrimFront(header.IPv6MinimumSize)
+		p = global.TransportProtocolNumber(h.Protocol())
 	} else {
 		log.Errorf("unknown network protocol.")
-        return nil
+		return nil
 	}
 
-    // parse udp header
-    hdr := header.UDP(nv)
-	if int(hdr.Length()) > len(nv) {
-		// Malformed packet.
-		log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
-		return nil 
+	if p == header.UDPProtocolNumber {
+		// parse udp header
+		hdr := header.UDP(nv)
+		if int(hdr.Length()) > len(nv) {
+			// Malformed packet.
+			log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
+			return nil
+		}
+		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
+		nv.TrimFront(header.UDPMinimumSize)
+		log.Infof("[ParsePacketHeaders] udp src %v:%v dst %v:%v", src, srcPort, dst, dstPort)
+	} else if p == header.TCPProtocolNumber {
+		// parse udp header
+		hdr := header.TCP(nv)
+		if int(hdr.Length()) > len(nv) {
+			// Malformed packet.
+			log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
+			return nil
+		}
+		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
+		nv.TrimFront(header.TCPMinimumSize)
+		log.Infof("[ParsePacketHeaders] tcp src %v:%v dst %v:%v", src, srcPort, dst, dstPort)
+	} else {
+		log.Errorf("unknown transport protocol.")
 	}
-	srcPort, dstPort := hdr.SourcePort(), hdr.DestinationPort() 
-	nv.TrimFront(header.UDPMinimumSize)
-    log.Infof("[ParsePacketHeaders] udp srcPort:%v dstPort:%v", srcPort, dstPort)
-    return nil
+	return nil
 }
 
 // WritePacket writes a packet to the given destination address and protocol.
