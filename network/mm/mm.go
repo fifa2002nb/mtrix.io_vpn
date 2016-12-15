@@ -127,7 +127,8 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 		hdr := header.TTP(nv)
 		offset := int(hdr.DataOffset())
 		if offset < header.TTPMinimumSize || offset > len(hdr) {
-			return false
+			log.Errorf("[ParsePacketHeaders] offset < header.TTPMinimumSize || offset > len(hdr)")
+			return nil
 		}
 		options := []byte(hdr[header.TTPMinimumSize:offset])
 		sequenceNumber := hdr.SequenceNumber()
