@@ -278,7 +278,7 @@ type Endpoint interface {
 	GetClientIP() Address
 	PushNetAddr(addr *net.UDPAddr)
 	PopNetAddr() *net.UDPAddr
-	InitSubnet(ip Address, netmask uint8)
+	InitSubnet(ip Address, netmask uint8) error
 	InitedSubnet() bool
 
 	HandlePacket(v buffer.View, udpAddr *net.UDPAddr)
