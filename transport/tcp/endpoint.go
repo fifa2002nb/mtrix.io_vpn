@@ -361,6 +361,13 @@ func (e *endpoint) cleanup() {
 	e.stack.UnregisterConnectedTransportEndpoint(e)
 	// release endpoint's subnetIP
 	e.stack.ReleaseIP(e.subnetIP)
+
+	// remove peer's addr
+	peer := []byte(e.subnetIP)
+	peer[3]++
+	e.stack.RemoveAddress(e.boundNICID, global.Address(peer))
+	// unbind peer from stack
+	e.UnBindFStack(global.Address(peer))
 }
 
 // Read reads data from the endpoint.
@@ -786,6 +793,11 @@ func (e *endpoint) BindToStack(Addr global.Address) error {
 	e.id.LocalAddress = Addr
 	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id, e)
 	return err
+}
+
+func (e *endpoint) UnBindFStack(Addr global.Address) {
+	e.id.LocalAddress = Addr
+	e.stack.UnregisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, e.id)
 }
 
 // ConnectEndpoint is not supported.
