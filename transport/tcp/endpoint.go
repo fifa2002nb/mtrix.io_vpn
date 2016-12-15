@@ -173,10 +173,20 @@ func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, wait
 	}
 }
 
-func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) {
+func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) error {
 	if !e.subnetInited {
 		e.subnetIP = ip
 		e.subnetMask = netmask
+
+		// register peer's addr
+		ip[3]++
+		if err := e.stack.AddAddress(e.boundNICID, e.netProto, ip); nil != err {
+			return err
+		}
+		// RegisterTransportEndpoint by peer's addr
+		if err := e.BindToStack(ip); nil != err {
+			return err
+		}
 		e.subnetInited = true
 	}
 }

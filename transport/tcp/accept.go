@@ -207,6 +207,7 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 	if err := n.stack.RegisterConnectedTransportEndpoint(n); nil != err {
 		return nil, err
 	}
+
 	// assign endpoint's subnetIP when tcp handshaking
 	cltIP, err := n.stack.NextIP()
 	if nil != err {

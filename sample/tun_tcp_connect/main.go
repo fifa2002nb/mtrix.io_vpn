@@ -64,43 +64,28 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		timer := time.NewTimer(time.Second * 1)
 		<-timer.C
 		if clientEP.InitedSubnet() {
-			if localIP, _, err := utils.ParseCIDR(clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil == err {
-				localIP = localIP.To4()
-				localIP[3]++
-				if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address(localIP)); nil == err {
-					if err := clientEP.BindToStack(global.Address(localIP)); nil != err {
-						log.Errorf("bind endpoint to stack err:%v", err)
-					}
-					if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil == err {
-						mtu, err := rawfile.GetMTU(tunName)
-						if err != nil {
-							clientEP.Close()
-							log.Errorf("getMTU err:%v", err)
-							return
-						}
-
-						fd, err := tun.Open(tunName)
-						if err != nil {
-							clientEP.Close()
-							log.Errorf("openTun err:%v", err)
-							return
-						}
-						linkEP := stack.FindLinkEndpoint(linkID)
-						linkEP.SetMTU(uint32(mtu))
-						linkEP.SetFd(fd)
-						s.EnableNIC(NICID)
-						log.Infof("[waitingForEnableNIC] enabled NIC:%v subnetIP:%v subnetMask:%v", NICID, clientEP.GetSubnetIP(), clientEP.GetSubnetMask())
-					} else {
-						clientEP.Close()
-						log.Errorf("setTunIP err:%v", err)
-					}
-				} else {
+			if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil == err {
+				mtu, err := rawfile.GetMTU(tunName)
+				if err != nil {
 					clientEP.Close()
-					log.Errorf("addAddress err:%v", err)
+					log.Errorf("getMTU err:%v", err)
+					return
 				}
+
+				fd, err := tun.Open(tunName)
+				if err != nil {
+					clientEP.Close()
+					log.Errorf("openTun err:%v", err)
+					return
+				}
+				linkEP := stack.FindLinkEndpoint(linkID)
+				linkEP.SetMTU(uint32(mtu))
+				linkEP.SetFd(fd)
+				s.EnableNIC(NICID)
+				log.Infof("[waitingForEnableNIC] enabled NIC:%v subnetIP:%v subnetMask:%v", NICID, clientEP.GetSubnetIP(), clientEP.GetSubnetMask())
 			} else {
 				clientEP.Close()
-				log.Errorf("parseCIDR err:%v", err)
+				log.Errorf("setTunIP err:%v", err)
 			}
 			break
 		}
