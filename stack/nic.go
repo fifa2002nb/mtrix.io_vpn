@@ -264,7 +264,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 		return
 	}
 
-	log.Infof("rdn recv:%v", vv)
+	log.Infof("[=>ReverseDeliverNetworkPacket] %v", vv)
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
 	r := makeRoute(protocol, dst, src, ref)
 	ref.ep.ReverseHandlePacket(&r, vv)
@@ -279,12 +279,6 @@ func (n *NIC) ReverseDeliverTransportPacket(r *Route, protocol global.TransportP
 	}
 
 	transProto := state.proto
-	// 通过随机数确定发出的端口号
-	/*srcPort, dstPort, err := transProto.ParsePorts(vv.First())
-	if err != nil {
-		atomic.AddUint64(&n.stack.stats.MalformedRcvdPackets, 1)
-		return
-	}*/
 	// LocalPort uint16, LocalAddress tcpip.Address, RemotePort uint16, RemoteAddress tcpip.Address
 	id := TransportEndpointID{uint16(0), r.LocalAddress, uint16(0), r.RemoteAddress}
 	if n.demux.reverseDeliverPacket(r, protocol, hdr, vv, id) {

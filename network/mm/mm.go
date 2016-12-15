@@ -69,7 +69,7 @@ func (e *endpoint) MaxHeaderLength() uint16 {
 	return e.linkEP.MaxHeaderLength() + header.MMMinimumSize
 }
 
-func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
+func (e *endpoint) ParsePacketHeaders(v buffer.View, direction string) error {
 	nv := buffer.NewView(len(v))
 	copy(nv, v)
 
@@ -83,12 +83,12 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 	if header.IPv4Version == header.IPVersion(nv) {
 		h := header.IPv4(nv)
 		if !h.IsValid(len(nv)) {
-			log.Errorf("[ParsePacketHeaders] !ipv4.IsValid(%v)", len(nv))
+			log.Errorf("[%sParsePacketHeaders] !ipv4.IsValid(%v)", direction, len(nv))
 			return nil
 		}
 		// For now we don't support fragmentation, so reject fragmented packets.
 		if h.FragmentOffset() != 0 || (h.Flags()&header.IPv4FlagMoreFragments) != 0 {
-			log.Errorf("[ParsePacketHeaders] now we don't support fragmentation. reject it.")
+			log.Errorf("[%sParsePacketHeaders] now we don't support fragmentation. reject it.", direction)
 			return nil
 		}
 		src, dst = h.SourceAddress(), h.DestinationAddress()
@@ -100,7 +100,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 	} else if header.IPv6Version == header.IPVersion(nv) {
 		h := header.IPv6(nv)
 		if !h.IsValid(len(nv)) {
-			log.Errorf("[ParsePacketHeaders] !ipv6.IsValid(%v)", len(nv))
+			log.Errorf("[%sParsePacketHeaders] !ipv6.IsValid(%v)", direction, len(nv))
 			return nil
 		}
 		src, dst = h.SourceAddress(), h.DestinationAddress()
@@ -116,18 +116,18 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 		hdr := header.UDP(nv)
 		if int(hdr.Length()) > len(nv) {
 			// Malformed packet.
-			log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
+			log.Errorf("[%sParsePacketHeaders] malformed packet %v", direction, nv)
 			return nil
 		}
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.UDPMinimumSize)
-		log.Infof("[ParsePacketHeaders] udp src %v:%v dst %v:%v", src, srcPort, dst, dstPort)
+		log.Infof("[%sParsePacketHeaders] udp src %v:%v dst %v:%v", direction, src, srcPort, dst, dstPort)
 	} else if p == header.TTPProtocolNumber {
 		// parse udp header
 		hdr := header.TTP(nv)
 		offset := int(hdr.DataOffset())
 		if offset < header.TTPMinimumSize || offset > len(hdr) {
-			log.Errorf("[ParsePacketHeaders] offset < header.TTPMinimumSize || offset > len(hdr)")
+			log.Errorf("[%sParsePacketHeaders] offset < header.TTPMinimumSize || offset > len(hdr)", direction)
 			return nil
 		}
 		options := []byte(hdr[header.TTPMinimumSize:offset])
@@ -138,7 +138,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.TCPMinimumSize)
-		log.Infof("[ParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
+		log.Infof("[%sParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", direction, src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
 	} else {
 		log.Errorf("unknown transport protocol.")
 	}
@@ -157,12 +157,12 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 	// 剥掉MM协议的头部，发送数据部分
 	payload.TrimFront(header.MMMinimumSize)
 	log.Infof("[<=WritePacket] %v", payload)
-	e.ParsePacketHeaders(payload) // for test
+	e.ParsePacketHeaders(payload, "<=") // for test
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
 func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
-	e.ParsePacketHeaders(vv.ToView()) // for test
+	e.ParsePacketHeaders(vv.ToView(), "=>") // for test
 
 	h := header.IPv4(vv.First())
 	if !h.IsValid(vv.Size()) {

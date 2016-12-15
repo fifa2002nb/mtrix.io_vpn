@@ -422,7 +422,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	v := vv.ToViewWithExtraView(hdr.View())
 	_, err := e.WriteToNet(v, nil)
 	if nil != err {
-		log.Errorf("%v", err)
+		log.Errorf("[=>ReverseHandlePacket]%v", err)
 	}
 }
 

@@ -50,7 +50,7 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 		buf := make([]byte, 2048)
 		plen, addr, err := udpConn.ReadFromUDP(buf)
 		if nil != err {
-			log.Errorf("%v", err)
+			log.Errorf("[<=hearFromNet] %v", err)
 		} else {
 			clientIP := global.Address(addr.IP.To4())
 			if ep, err := s.GetConnectedTransportEndpoint(clientIP); nil == err { //数据传输
