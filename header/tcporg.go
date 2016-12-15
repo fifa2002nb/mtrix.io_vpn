@@ -20,147 +20,125 @@ const (
 	winSize     = 14
 	tcpChecksum = 16
 	urgentPtr   = 18
-	subnetIP    = 20
-	subnetMask  = 24
 )
 
-// Flags that may be set in a TCP segment.
+// Flags that may be set in a TTP segment.
 const (
-	TCPFlagFin = 1 << iota
-	TCPFlagSyn
-	TCPFlagRst
-	TCPFlagPsh
-	TCPFlagAck
-	TCPFlagUrg
+	TTPFlagFin = 1 << iota
+	TTPFlagSyn
+	TTPFlagRst
+	TTPFlagPsh
+	TTPFlagAck
+	TTPFlagUrg
 )
 
-// Options that may be present in a TCP segment.
+// Options that may be present in a TTP segment.
 const (
-	TCPOptionEOL = 0
-	TCPOptionNOP = 1
-	TCPOptionMSS = 2
-	TCPOptionWS  = 3
+	TTPOptionEOL = 0
+	TTPOptionNOP = 1
+	TTPOptionMSS = 2
+	TTPOptionWS  = 3
 )
 
-// TCPFields contains the fields of a TCP packet. It is used to describe the
+// TTPFields contains the fields of a TTP packet. It is used to describe the
 // fields of a packet that needs to be encoded.
-type TCPFields struct {
-	// SrcPort is the "source port" field of a TCP packet.
+type TTPFields struct {
+	// SrcPort is the "source port" field of a TTP packet.
 	SrcPort uint16
 
-	// DstPort is the "destination port" field of a TCP packet.
+	// DstPort is the "destination port" field of a TTP packet.
 	DstPort uint16
 
-	// SeqNum is the "sequence number" field of a TCP packet.
+	// SeqNum is the "sequence number" field of a TTP packet.
 	SeqNum uint32
 
-	// AckNum is the "acknowledgement number" field of a TCP packet.
+	// AckNum is the "acknowledgement number" field of a TTP packet.
 	AckNum uint32
 
-	// DataOffset is the "data offset" field of a TCP packet.
+	// DataOffset is the "data offset" field of a TTP packet.
 	DataOffset uint8
 
-	// Flags is the "flags" field of a TCP packet.
+	// Flags is the "flags" field of a TTP packet.
 	Flags uint8
 
-	// WindowSize is the "window size" field of a TCP packet.
+	// WindowSize is the "window size" field of a TTP packet.
 	WindowSize uint16
 
-	// Checksum is the "checksum" field of a TCP packet.
+	// Checksum is the "checksum" field of a TTP packet.
 	Checksum uint16
 
-	// UrgentPointer is the "urgent pointer" field of a TCP packet.
+	// UrgentPointer is the "urgent pointer" field of a TTP packet.
 	UrgentPointer uint16
-
-	SubnetIP global.Address
-
-	SubnetMask uint8
 }
 
-// TCP represents a TCP header stored in a byte array.
-type TCP []byte
+// TTP represents a TTP header stored in a byte array.
+type TTP []byte
 
 const (
-	// TCPMinimumSize is the minimum size of a valid TCP packet.
-	TCPMinimumSize = 28
+	// TTPMinimumSize is the minimum size of a valid TTP packet.
+	TTPMinimumSize = 20
 
-	// TCPProtocolNumber is TCP's transport protocol number.
-	TCPProtocolNumber global.TransportProtocolNumber = 666
+	// TTPProtocolNumber is TTP's transport protocol number.
+	TTPProtocolNumber global.TransportProtocolNumber = 6
 )
 
-func (b TCP) SubnetIP() global.Address {
-	return global.Address(b[subnetIP : subnetIP+IPv4AddressSize])
-}
-
-func (b TCP) SetSubnetIP(addr global.Address) {
-	copy(b[subnetIP:subnetIP+IPv4AddressSize], addr)
-}
-
-func (b TCP) SubnetMask() uint8 {
-	return b[subnetMask]
-}
-
-func (b TCP) SetNetMask(nm uint8) {
-	b[subnetMask] = nm
-}
-
 // SourcePort returns the "source port" field of the tcp header.
-func (b TCP) SourcePort() uint16 {
+func (b TTP) SourcePort() uint16 {
 	return binary.BigEndian.Uint16(b[srcPort:])
 }
 
 // DestinationPort returns the "destination port" field of the tcp header.
-func (b TCP) DestinationPort() uint16 {
+func (b TTP) DestinationPort() uint16 {
 	return binary.BigEndian.Uint16(b[dstPort:])
 }
 
 // SequenceNumber returns the "sequence number" field of the tcp header.
-func (b TCP) SequenceNumber() uint32 {
+func (b TTP) SequenceNumber() uint32 {
 	return binary.BigEndian.Uint32(b[seqNum:])
 }
 
 // AckNumber returns the "ack number" field of the tcp header.
-func (b TCP) AckNumber() uint32 {
+func (b TTP) AckNumber() uint32 {
 	return binary.BigEndian.Uint32(b[ackNum:])
 }
 
 // DataOffset returns the "data offset" field of the tcp header.
-func (b TCP) DataOffset() uint8 {
+func (b TTP) DataOffset() uint8 {
 	return (b[dataOffset] >> 4) * 4
 }
 
 // Payload returns the data in the tcp packet.
-func (b TCP) Payload() []byte {
+func (b TTP) Payload() []byte {
 	return b[b.DataOffset():]
 }
 
 // Flags returns the flags field of the tcp header.
-func (b TCP) Flags() uint8 {
+func (b TTP) Flags() uint8 {
 	return b[tcpFlags]
 }
 
 // WindowSize returns the "window size" field of the tcp header.
-func (b TCP) WindowSize() uint16 {
+func (b TTP) WindowSize() uint16 {
 	return binary.BigEndian.Uint16(b[winSize:])
 }
 
 // Checksum returns the "checksum" field of the tcp header.
-func (b TCP) Checksum() uint16 {
+func (b TTP) Checksum() uint16 {
 	return binary.BigEndian.Uint16(b[tcpChecksum:])
 }
 
 // SetSourcePort sets the "source port" field of the tcp header.
-func (b TCP) SetSourcePort(port uint16) {
+func (b TTP) SetSourcePort(port uint16) {
 	binary.BigEndian.PutUint16(b[srcPort:], port)
 }
 
 // SetDestinationPort sets the "destination port" field of the tcp header.
-func (b TCP) SetDestinationPort(port uint16) {
+func (b TTP) SetDestinationPort(port uint16) {
 	binary.BigEndian.PutUint16(b[dstPort:], port)
 }
 
 // SetChecksum sets the checksum field of the tcp header.
-func (b TCP) SetChecksum(checksum uint16) {
+func (b TTP) SetChecksum(checksum uint16) {
 	binary.BigEndian.PutUint16(b[tcpChecksum:], checksum)
 }
 
@@ -169,7 +147,7 @@ func (b TCP) SetChecksum(checksum uint16) {
 // totalLen is the total length of the segment
 // partialChecksum is the checksum of the network-layer pseudo-header
 // (excluding the total length) and the checksum of the segment data.
-func (b TCP) CalculateChecksum(partialChecksum uint16, totalLen uint16) uint16 {
+func (b TTP) CalculateChecksum(partialChecksum uint16, totalLen uint16) uint16 {
 	// Add the length portion of the checksum to the pseudo-checksum.
 	tmp := make([]byte, 2)
 	binary.BigEndian.PutUint16(tmp, totalLen)
@@ -179,7 +157,7 @@ func (b TCP) CalculateChecksum(partialChecksum uint16, totalLen uint16) uint16 {
 	return Checksum(b[:b.DataOffset()], checksum)
 }
 
-func (b TCP) encodeSubset(seq, ack uint32, flags uint8, rcvwnd uint16) {
+func (b TTP) encodeSubset(seq, ack uint32, flags uint8, rcvwnd uint16) {
 	binary.BigEndian.PutUint32(b[seqNum:], seq)
 	binary.BigEndian.PutUint32(b[ackNum:], ack)
 	b[tcpFlags] = flags
@@ -187,20 +165,18 @@ func (b TCP) encodeSubset(seq, ack uint32, flags uint8, rcvwnd uint16) {
 }
 
 // Encode encodes all the fields of the tcp header.
-func (b TCP) Encode(t *TCPFields) {
+func (b TTP) Encode(t *TTPFields) {
 	b.encodeSubset(t.SeqNum, t.AckNum, t.Flags, t.WindowSize)
 	binary.BigEndian.PutUint16(b[srcPort:], t.SrcPort)
 	binary.BigEndian.PutUint16(b[dstPort:], t.DstPort)
 	b[dataOffset] = (t.DataOffset / 4) << 4
 	binary.BigEndian.PutUint16(b[tcpChecksum:], t.Checksum)
 	binary.BigEndian.PutUint16(b[urgentPtr:], t.UrgentPointer)
-	copy(b[subnetIP:subnetIP+IPv4AddressSize], t.SubnetIP)
-	b[subnetMask] = t.SubnetMask
 }
 
 // EncodePartial updates a subset of the fields of the tcp header. It is useful
 // in cases when similar segments are produced.
-func (b TCP) EncodePartial(partialChecksum, length uint16, seqnum, acknum uint32, flags byte, rcvwnd uint16) {
+func (b TTP) EncodePartial(partialChecksum, length uint16, seqnum, acknum uint32, flags byte, rcvwnd uint16) {
 	// Add the total length and "flags" field contributions to the checksum.
 	// We don't use the flags field directly from the header because it's a
 	// one-byte field with an odd offset, so it would be accounted for

@@ -105,7 +105,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 		}
 		src, dst = h.SourceAddress(), h.DestinationAddress()
 		nv.TrimFront(header.IPv6MinimumSize)
-		p = global.TransportProtocolNumber(h.Protocol())
+		p = global.TransportProtocolNumber(h.NextHeader())
 	} else {
 		log.Errorf("unknown network protocol.")
 		return nil
@@ -122,17 +122,22 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View) error {
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.UDPMinimumSize)
 		log.Infof("[ParsePacketHeaders] udp src %v:%v dst %v:%v", src, srcPort, dst, dstPort)
-	} else if p == header.TCPProtocolNumber {
+	} else if p == header.TTPProtocolNumber {
 		// parse udp header
-		hdr := header.TCP(nv)
-		if int(hdr.Length()) > len(nv) {
-			// Malformed packet.
-			log.Errorf("[ParsePacketHeaders] malformed packet %v", nv)
-			return nil
+		hdr := header.TTP(nv)
+		offset := int(hdr.DataOffset())
+		if offset < header.TTPMinimumSize || offset > len(hdr) {
+			return false
 		}
+		options := []byte(hdr[header.TTPMinimumSize:offset])
+		sequenceNumber := hdr.SequenceNumber()
+		ackNumber := hdr.AckNumber()
+		flags := hdr.Flags()
+		window := hdr.WindowSize()
+
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.TCPMinimumSize)
-		log.Infof("[ParsePacketHeaders] tcp src %v:%v dst %v:%v", src, srcPort, dst, dstPort)
+		log.Infof("[ParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
 	} else {
 		log.Errorf("unknown transport protocol.")
 	}
