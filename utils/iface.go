@@ -33,7 +33,7 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 	copy([]byte(peer), []byte(ip))
 	peer[3]++
 
-	sargs := fmt.Sprintf("ip tuntap add mode tun %s", tunName)
+	sargs := fmt.Sprintf("tuntap add mode tun %s", tunName)
 	args := strings.Split(sargs, " ")
 	cmd := exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
