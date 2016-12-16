@@ -61,7 +61,8 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
 
-	if err := RedirectGateway(tunName, peer); nil != err {
+	peerStr := fmt.Sprintf("%d.%d.%d.%d", peer[0], peer[1], peer[2], peer[3])
+	if err := RedirectGateway(tunName, peerStr); nil != err {
 		log.Errorf("%v", err)
 	}
 	return nil
@@ -165,7 +166,7 @@ func UnRedirectGateway() error {
 		}
 	}
 	// postdown subnetwork's routes
-	cmd = exec.Command("chnroute-down.sh")
+	cmd := exec.Command("chnroute-down.sh")
 	if err := cmd.Run(); nil != err {
 		log.Errorf("[UnRedirectGateway] postdown:%v", err)
 	}
