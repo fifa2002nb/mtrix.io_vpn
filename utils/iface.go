@@ -3,11 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/global"
 	"net"
 	"os/exec"
 	"strings"
-	//log "github.com/Sirupsen/logrus"
 )
 
 /*
@@ -60,6 +60,10 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
+
+	if err := RedirectGateway(tunName, peer); nil != err {
+		log.Errorf("%v", err)
+	}
 	return nil
 }
 
@@ -83,28 +87,87 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error
 	args := strings.Split(sargs, " ")
 	cmd := exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
-		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+		log.Errorf("ip %v err:%v", sargs, err)
 	}
 
 	sargs = fmt.Sprintf("addr del dev %s local %s peer %s", tunName, ip, peer)
 	args = strings.Split(sargs, " ")
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
-		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+		log.Errorf("ip %v err:%v", sargs, err)
 	}
 
 	sargs = fmt.Sprintf("link set %s down", tunName)
 	args = strings.Split(sargs, " ")
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
-		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+		log.Errorf("ip %v err:%v", sargs, err)
 	}
 
 	sargs = fmt.Sprintf("tuntap del mode tun %s", tunName)
 	args = strings.Split(sargs, " ")
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
-		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+		log.Errorf("ip %v err:%v", sargs, err)
+	}
+
+	if err := UnRedirectGateway(); nil != err {
+		log.Errorf("%v", err)
+	}
+	return nil
+}
+
+// redirect default gateway
+func RedirectGateway(tunName, gw string) error {
+	// postup subnetwork's routes
+	cmd := exec.Command("chnroute-up.sh")
+	if err := cmd.Run(); nil != err {
+		log.Errorf("[RedirectGateway] postup:%v", err)
+		return err
+	}
+	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	for _, subnet := range subnets {
+		/* for client
+		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+		   10.1.1.0        10.1.1.4        255.255.255.0   UG    0      0        0 tun0
+		   0.0.0.0         10.1.1.4        128.0.0.0       UG    0      0        0 tun0
+		   128.0.0.0       10.1.1.4        128.0.0.0       UG    0      0        0 tun0
+		*/
+		sargs := fmt.Sprintf("-4 route add %s via %s dev %s", subnet, gw, tunName)
+		args := strings.Split(sargs, " ")
+		cmd := exec.Command("ip", args...)
+		log.Info("[RedirectGateway] ip %s", sargs)
+		err := cmd.Run()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// unredirect default gateway
+func UnRedirectGateway() error {
+	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	for _, subnet := range subnets {
+		/* for client
+		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
+		   10.1.1.0        10.1.1.4        255.255.255.0   UG    0      0        0 tun0
+		   0.0.0.0         10.1.1.4        128.0.0.0       UG    0      0        0 tun0
+		   128.0.0.0       10.1.1.4        128.0.0.0       UG    0      0        0 tun0
+		*/
+		sargs := fmt.Sprintf("-4 route del %s", subnet)
+		args := strings.Split(sargs, " ")
+		cmd := exec.Command("ip", args...)
+		log.Info("[UnRedirectGateway] ip %s", sargs)
+		err := cmd.Run()
+		if err != nil {
+			log.Errorf("%v", err)
+		}
+	}
+	// postdown subnetwork's routes
+	cmd = exec.Command("chnroute-down.sh")
+	if err := cmd.Run(); nil != err {
+		log.Errorf("[UnRedirectGateway] postdown:%v", err)
 	}
 	return nil
 }
