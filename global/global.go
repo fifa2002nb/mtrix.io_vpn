@@ -392,6 +392,8 @@ type Stack interface {
 	// AddAddress adds a new network-layer address to the specified NIC.
 	AddAddress(id NICID, protocol NetworkProtocolNumber, addr Address) error
 
+	AddSubnet(id NICID, protocol NetworkProtocolNumber, subnet Subnet) error
+
 	// Stats returns a snapshot of the current stats.
 	// TODO: Make stats available in sentry for debugging/diag.
 	Stats() Stats
