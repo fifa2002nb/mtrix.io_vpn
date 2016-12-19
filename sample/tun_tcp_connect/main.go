@@ -93,11 +93,12 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
+	if len(os.Args) != 3 {
+		log.Fatal("Usage: ", os.Args[0], " <tun-device> <remote-addr>")
 	}
 
 	tunName := os.Args[1]
+	addrName := os.Args[2]
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -132,7 +133,7 @@ func main() {
 	defer connectEP.Close()
 
 	// connect to 10.1.1.2:0
-	addrName := "115.29.175.52"
+	//addrName := "115.29.175.52"
 	srv := net.ParseIP(addrName)
 	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address(srv.To4())); err != nil {
 		log.Infof("%v", err)

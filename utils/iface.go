@@ -159,7 +159,7 @@ func UnRedirectGateway() error {
 		sargs := fmt.Sprintf("-4 route del %s", subnet)
 		args := strings.Split(sargs, " ")
 		cmd := exec.Command("ip", args...)
-		log.Info("[UnRedirectGateway] ip %s", sargs)
+		log.Infof("[UnRedirectGateway] ip %s", sargs)
 		err := cmd.Run()
 		if err != nil {
 			log.Errorf("%v", err)
