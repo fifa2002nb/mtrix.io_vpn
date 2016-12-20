@@ -123,16 +123,6 @@ func main() {
 		},
 	})
 
-	// Add default subnet 0.0.0.0/32
-	/*subnet, err := global.NewSubnet(global.Address("\x00\x00\x00\x00"), global.AddressMask("\x00\x00\x00\x00"))
-	if err != nil {
-		log.Errorf("%v", err)
-	}
-	err = s.AddSubnet(1, mm.ProtocolNumber, subnet)
-	if nil != err {
-		log.Errorf("%v", err)
-	}*/
-
 	// Create TCP endpoint, bind it, then start listening.
 	var wq waiter.Queue
 	connectEP, err := s.NewEndpoint(tcp.ProtocolNumber, mm.ProtocolNumber, &wq)
@@ -145,11 +135,11 @@ func main() {
 	// connect to 10.1.1.2:0
 	//addrName := "115.29.175.52"
 	srv := net.ParseIP(addrName)
-	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address(srv.To4())); err != nil {
+	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address("\x00\x00\x00\x00")); err != nil {
 		log.Infof("%v", err)
 	}
 
-	if err := connectEP.Connect(global.FullAddress{NICID, global.Address(srv.To4()), 0}); err != nil {
+	if err := connectEP.Connect(global.FullAddress{NICID, global.Address("\x00\x00\x00\x00"), 0}); err != nil {
 		log.Infof("%v", err)
 	}
 

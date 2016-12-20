@@ -222,7 +222,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 	}
 
 	src, dst := netProto.ParseAddresses(vv.First())
-	id := NetworkEndpointID{src}
+	id := NetworkEndpointID{golbal.Address("\x00\x00\x00\x00")}
 
 	n.mu.RLock()
 	ref := n.endpoints[id]
@@ -266,7 +266,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 
 	log.Infof("[=>ReverseDeliverNetworkPacket] %v ID:%v", vv, id)
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
-	r := makeRoute(protocol, src, dst, ref)
+	r := makeRoute(protocol, dst, src, ref)
 	ref.ep.ReverseHandlePacket(&r, vv)
 	ref.decRef()
 }

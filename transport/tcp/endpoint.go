@@ -181,9 +181,9 @@ func (e *endpoint) InitSubnet(ip global.Address, netmask uint8) error {
 		// register peer's addr
 		//peer := []byte(ip)
 		//peer[3]++
-		if err := e.stack.AddAddress(e.boundNICID, e.netProto, e.subnetIP); nil != err {
+		/*if err := e.stack.AddAddress(e.boundNICID, e.netProto, e.subnetIP); nil != err {
 			return err
-		}
+		}*/
 		// RegisterTransportEndpoint by peer's addr
 		if err := e.BindToStack(e.subnetIP); nil != err {
 			return err
