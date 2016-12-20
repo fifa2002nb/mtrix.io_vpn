@@ -266,7 +266,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 
 	log.Infof("[=>ReverseDeliverNetworkPacket] %v ID:%v", vv, id)
 	//netProto tcpip.NetworkProtocolNumber, localAddr, remoteAddr tcpip.Address, ref *referencedNetworkEndpoint
-	r := makeRoute(protocol, dst, src, ref)
+	r := makeRoute(protocol, src, dst, ref)
 	ref.ep.ReverseHandlePacket(&r, vv)
 	ref.decRef()
 }

@@ -104,29 +104,12 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 	// Try to find a match with the id minus the local address.
 	nid := id
 
-	nid.LocalAddress = ""
-	if ep := eps.endpoints[nid]; ep != nil {
-		ep.ReverseHandlePacket(r, id, hdr, vv)
-		return true
-	}
-
-	// Try to find a match with the id minus the remote part.
-	nid.LocalAddress = id.LocalAddress
 	nid.RemoteAddress = ""
-	nid.RemotePort = 0
-
 	if ep := eps.endpoints[nid]; ep != nil {
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true
 	}
 
-	// 应该只能命中该种情况
-	// Try to find a match with only the local port.
-	nid.LocalAddress = ""
-	if ep := eps.endpoints[nid]; ep != nil {
-		ep.ReverseHandlePacket(r, id, hdr, vv)
-		return true
-	}
 	log.Errorf("[=>reverseDeliverPacket]  %v didn't match any endpoint.", id)
 	return false
 }

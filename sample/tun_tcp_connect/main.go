@@ -124,14 +124,14 @@ func main() {
 	})
 
 	// Add default subnet 0.0.0.0/32
-	subnet, err := global.NewSubnet(global.Address("\x00\x00\x00\x00"), global.AddressMask("\x00\x00\x00\x00"))
+	/*subnet, err := global.NewSubnet(global.Address("\x00\x00\x00\x00"), global.AddressMask("\x00\x00\x00\x00"))
 	if err != nil {
 		log.Errorf("%v", err)
 	}
 	err = s.AddSubnet(1, mm.ProtocolNumber, subnet)
 	if nil != err {
 		log.Errorf("%v", err)
-	}
+	}*/
 
 	// Create TCP endpoint, bind it, then start listening.
 	var wq waiter.Queue

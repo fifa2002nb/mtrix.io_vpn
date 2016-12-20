@@ -137,7 +137,7 @@ func RedirectGateway(tunName, gw string) error {
 		sargs := fmt.Sprintf("-4 route add %s via %s dev %s", subnet, gw, tunName)
 		args := strings.Split(sargs, " ")
 		cmd := exec.Command("ip", args...)
-		log.Info("[RedirectGateway] ip %s", sargs)
+		log.Infof("[RedirectGateway] ip %s", sargs)
 		err := cmd.Run()
 		if err != nil {
 			return err
