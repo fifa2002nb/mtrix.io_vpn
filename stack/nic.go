@@ -222,7 +222,7 @@ func (n *NIC) ReverseDeliverNetworkPacket(linkEP LinkEndpoint, protocol global.N
 	}
 
 	src, dst := netProto.ParseAddresses(vv.First())
-	id := NetworkEndpointID{dst}
+	id := NetworkEndpointID{src}
 
 	n.mu.RLock()
 	ref := n.endpoints[id]
