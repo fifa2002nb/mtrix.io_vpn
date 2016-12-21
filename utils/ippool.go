@@ -3,9 +3,9 @@ package utils
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
+	"mtrix.io_vpn/global"
 	"net"
 	"sync/atomic"
-    "mtrix.io_vpn/global"
 )
 
 type IPPool struct {
@@ -22,6 +22,9 @@ func NewIPPool(addr string) *IPPool {
 }
 
 func (p *IPPool) NextIP() (*net.IPNet, error) {
+	if nil == p {
+		return nil, errors.New("nil == p")
+	}
 	found := false
 	var i int
 	for i = 3; i < 255; i += 2 {
@@ -47,10 +50,12 @@ func (p *IPPool) NextIP() (*net.IPNet, error) {
 func (p *IPPool) ReleaseIP(ip global.Address) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("%v", err)
+			log.Errorf("[ReleaeIP] %v", err)
 		}
 	}()
-
+	if nil == p {
+		return
+	}
 	if 4 == len(ip) {
 		i := ip[3]
 		p.pool[i] = 0

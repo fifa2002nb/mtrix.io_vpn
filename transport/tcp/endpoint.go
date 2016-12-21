@@ -363,15 +363,15 @@ func (e *endpoint) cleanup() {
 	e.stack.ReleaseIP(e.subnetIP)
 
 	// remove peer's addr
-	peer := []byte(e.subnetIP)
-	peer[3]++
+	//peer := []byte(e.subnetIP)
+	//peer[3]++
 	// delete subnetIP addr
-	e.stack.RemoveAddress(e.boundNICID, global.Address(peer))
+	e.stack.RemoveAddress(e.boundNICID, e.subnetIP)
 	// delete realIP addr
 	e.stack.RemoveAddress(e.boundNICID, e.clientIP)
 
 	// unbind peer from stack
-	e.UnBindFStack(global.Address(peer))
+	e.UnBindFStack(e.subnetIP)
 }
 
 // Read reads data from the endpoint.
@@ -435,6 +435,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	if nil != err {
 		log.Errorf("[=>ReverseHandlePacket]%v", err)
 	}
+	log.Infof("[=>ReverseHandlePacket] hdrLen:%v dataLen:%v", len(hdr.View()), vv.Size())
 }
 
 func (e *endpoint) Write(v buffer.View, to *global.FullAddress) (uintptr, error) {
@@ -795,7 +796,9 @@ func (e *endpoint) Connect(addr global.FullAddress) error {
 
 func (e *endpoint) BindToStack(Addr global.Address) error {
 	newid := e.id
+	// 双向
 	newid.LocalAddress = Addr
+	newid.RemoteAddress = Addr
 	err := e.stack.RegisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, newid, e)
 	return err
 }
@@ -803,6 +806,7 @@ func (e *endpoint) BindToStack(Addr global.Address) error {
 func (e *endpoint) UnBindFStack(Addr global.Address) {
 	newid := e.id
 	newid.LocalAddress = Addr
+	newid.RemoteAddress = Addr
 	e.stack.UnregisterTransportEndpoint(e.boundNICID, e.effectiveNetProtos, ProtocolNumber, newid)
 }
 
@@ -1023,7 +1027,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 	vv := v.ToVectorisedView(views)
 	id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
 
-	log.Infof("[<=HandlePacket] %v ID:%v", v, id)
+	log.Infof("[<=HandlePacket] dataLen:%v ID:%v", len(v), id)
 
 	s := newSegment(&route, id, &vv, udpAddr)
 	if !s.parse() {

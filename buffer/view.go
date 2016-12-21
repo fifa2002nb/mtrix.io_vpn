@@ -156,9 +156,9 @@ func (vv *VectorisedView) ToView() View {
 
 func (vv *VectorisedView) ToViewWithExtraView(ev View) View {
 	v := make([]byte, vv.size+len(ev))
-    u := v
-    len := copy(v, ev)
-    u = u[len:]
+	u := v
+	len := copy(v, ev)
+	u = u[len:]
 	for i := range vv.views {
 		n := copy(u, vv.views[i])
 		u = u[n:]

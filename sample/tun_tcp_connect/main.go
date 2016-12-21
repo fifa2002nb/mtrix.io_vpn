@@ -79,9 +79,10 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 					return
 				}
 				linkEP := stack.FindLinkEndpoint(linkID)
-				linkEP.SetMTU(uint32(mtu))
+				linkEP.SetMTU(uint32(mtu)) // 然并软，tcp的sender已经用服务端发来的mss初始化了maxPayloadSize，后面需要优化
 				linkEP.SetFd(fd)
 				s.EnableNIC(NICID)
+				go clientEP.WriteToInterface()
 				log.Infof("[waitingForEnableNIC] enabled NIC:%v subnetIP:%v subnetMask:%v", NICID, clientEP.GetSubnetIP(), clientEP.GetSubnetMask())
 			} else {
 				clientEP.Close()
@@ -130,11 +131,9 @@ func main() {
 		log.Infof("%v", err)
 	}
 
-	defer connectEP.Close()
-
 	// connect to 10.1.1.2:0
 	//addrName := "115.29.175.52"
-	srv := net.ParseIP(addrName)
+	//srv := net.ParseIP(addrName)
 	if err := s.AddAddress(NICID, mm.ProtocolNumber, global.Address("\x00\x00\x00\x00")); err != nil {
 		log.Infof("%v", err)
 	}

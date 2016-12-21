@@ -121,7 +121,7 @@ func main() {
 	defer listenEP.Close()
 
 	// bind to 10.1.1.2:0
-	if err := listenEP.Bind(global.FullAddress{1, global.Address("\x0A\x01\x01\x02"), 0}, nil); err != nil {
+	if err := listenEP.Bind(global.FullAddress{1, global.Address("\x00\x00\x00\x00"), 0}, nil); err != nil {
 		log.Fatal("Bind failed: ", err)
 	}
 

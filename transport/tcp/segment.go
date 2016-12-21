@@ -5,6 +5,7 @@
 package tcp
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/global"
 	"mtrix.io_vpn/header"
@@ -137,5 +138,6 @@ func (s *segment) parse() bool {
 	s.window = seqnum.Size(h.WindowSize())
 	s.subnetIP = h.SubnetIP()
 	s.subnetMask = h.SubnetMask()
+	log.Infof("[<=parse] dataOffset:%v dataLen:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", offset, s.data.Size(), s.options, s.sequenceNumber, s.ackNumber, s.flags, s.window)
 	return true
 }
