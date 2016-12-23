@@ -50,7 +50,7 @@ func (e *endpoint) MTU() uint32 {
 	if lmtu > maxTotalSize {
 		lmtu = maxTotalSize
 	}
-	return lmtu - uint32(e.MaxHeaderLength())
+	return lmtu + uint32(e.MaxHeaderLength())
 }
 
 // NICID returns the ID of the NIC this endpoint belongs to.
@@ -169,7 +169,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 		return
 	}
 
-	mtu := int(r.MTU()) - header.MMMinimumSize - header.TCPMinimumSize
+	/*mtu := int(r.MTU()) - header.MMMinimumSize - header.TCPMinimumSize
 	if vv.Size() > mtu {
 		for {
 			var views [8]buffer.View
@@ -194,7 +194,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 				break
 			}
 		}
-	}
+	}*/
 	hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
 	m := header.MM(hdr.Prepend(header.MMMinimumSize))
 	m.Encode(&header.MMFields{

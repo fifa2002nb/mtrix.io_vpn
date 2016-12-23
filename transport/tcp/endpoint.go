@@ -463,7 +463,7 @@ func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, e
 
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&e.route, e.id, &vv, e.PopNetAddr())
+	s := newSegment(&e.route, e.id, &vv, nil)
 
 	e.sndBufMu.Lock()
 

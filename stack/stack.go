@@ -112,6 +112,13 @@ func (s *Stack) EnableIPPool(addr string) error {
 	return nil
 }
 
+func (s *Stack) GetNextIP() (*net.IPNet, error) {
+	if nil == s.IPPool {
+		return nil, errors.New("init IPPool first.")
+	}
+	return s.IPPool.NextIP()
+}
+
 func (s *Stack) GetPacket() *global.EndpointData {
 	return <-s.ToNetChan
 }

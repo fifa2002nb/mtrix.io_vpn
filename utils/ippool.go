@@ -27,7 +27,7 @@ func (p *IPPool) NextIP() (*net.IPNet, error) {
 	}
 	found := false
 	var i int
-	for i = 3; i < 255; i += 2 {
+	for i = 1; i < 255; i += 2 {
 		if atomic.CompareAndSwapInt32(&p.pool[i], 0, 1) {
 			found = true
 			break

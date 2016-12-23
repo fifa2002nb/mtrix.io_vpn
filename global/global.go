@@ -409,6 +409,7 @@ type Stack interface {
 
 	NetAddrHash(a *net.UDPAddr) [6]byte
 
+	GetNextIP() (*net.IPNet, error)
 	GetConnectedTransportEndpoint(ip Address) (*Endpoint, error)
 	RegisterConnectedTransportEndpoint(ep Endpoint) error
 	UnregisterConnectedTransportEndpoint(ep Endpoint)

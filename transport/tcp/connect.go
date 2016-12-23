@@ -295,7 +295,7 @@ func parseSynOptions(s *segment) (mss uint16, ok bool) {
 
 func sendSynTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.TransportEndpointID, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
 	// Initialize the options.
-	mss := r.MTU() - header.TCPMinimumSize
+	mss := r.MTU() + header.TCPMinimumSize
 	options := []byte{
 		// Initialize the MSS option.
 		header.TCPOptionMSS, 4, byte(mss >> 8), byte(mss),

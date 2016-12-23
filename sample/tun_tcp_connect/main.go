@@ -64,8 +64,9 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		timer := time.NewTimer(time.Second * 1)
 		<-timer.C
 		if clientEP.InitedSubnet() {
-			if err := utils.SetTunIP(tunName, clientEP.GetSubnetIP(), clientEP.GetSubnetMask()); nil == err {
-				mtu, err := rawfile.GetMTU(tunName)
+			defaultMtu := 1500
+			if err := utils.SetTunIP(tunName, uint32(defaultMtu), clientEP.GetSubnetIP(), clientEP.GetSubnetMask(), true); nil == err {
+				mtu, err := rawfile.GetMTU(tunName) //其实已经在SetTunIP预设，这里装模作样取一下
 				if err != nil {
 					clientEP.Close()
 					log.Errorf("getMTU err:%v", err)
@@ -79,7 +80,7 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 					return
 				}
 				linkEP := stack.FindLinkEndpoint(linkID)
-				linkEP.SetMTU(uint32(mtu)) // 然并软，tcp的sender已经用服务端发来的mss初始化了maxPayloadSize，后面需要优化
+				linkEP.SetMTU(uint32(mtu)) // 然并软,mtu默认为1500，在setTunIP中写死;另外，tcp的sender已经用服务端发来的mss初始化了maxPayloadSize，后面需要优化
 				linkEP.SetFd(fd)
 				s.EnableNIC(NICID)
 				go clientEP.WriteToInterface()
@@ -108,7 +109,8 @@ func main() {
 	s := stack.New([]string{mm.ProtocolName}, []string{tcp.ProtocolName})
 
 	// fd and mtu inited by default value
-	linkID := fdbased.New(-1, -1, nil)
+	// tun0 fd在建立连接后生成，mtu预设1500
+	linkID := fdbased.New(-1, 1500, nil)
 	NICID := global.NICID(1)
 	if err := s.CreateDisabledNIC(NICID, linkID); err != nil {
 		log.Fatal(err)
@@ -166,7 +168,7 @@ func main() {
 				}
 				time.Sleep(1 * time.Second)
 				// shut down tun networkCard
-				if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask()); nil != err {
+				if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask(), true); nil != err {
 					log.Errorf("%v", err)
 				}
 				log.Info("done")

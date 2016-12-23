@@ -19,6 +19,7 @@ import (
 	"mtrix.io_vpn/network/mm"
 	"mtrix.io_vpn/stack"
 	"mtrix.io_vpn/transport/tcp"
+	"mtrix.io_vpn/utils"
 	"mtrix.io_vpn/waiter"
 	"net"
 	"os"
@@ -81,6 +82,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// init tap/tun device
+	cltIP, err := s.GetNextIP()
+	if nil != err {
+		log.Fatal(err)
+	}
+	// assign subnetIP/Mask
+	subnetIP := global.Address(cltIP.IP.To4())
+	subnetMask, _ := cltIP.Mask.Size()
+	defaultMtu := 1500
+	err = utils.SetTunIP(tunName, uint32(defaultMtu), subnetIP, uint8(subnetMask), false)
+	if nil != err {
+		log.Fatal(err)
+	}
+
+	//其实已经在SetTunIP预设，这里装模作样取一下
 	mtu, err := rawfile.GetMTU(tunName)
 	if err != nil {
 		log.Fatal(err)
@@ -118,7 +134,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer listenEP.Close()
+	err = listenEP.InitSubnet(subnetIP, uint8(subnetMask))
+	if nil != err {
+		log.Fatal(err)
+	}
 
 	// bind to 10.1.1.2:0
 	if err := listenEP.Bind(global.FullAddress{1, global.Address("\x00\x00\x00\x00"), 0}, nil); err != nil {
@@ -141,7 +160,8 @@ func main() {
 					<-notifyCh
 					continue
 				}
-				log.Fatal("Accept() failed:", err)
+				log.Infof("Accept() err:%v", err)
+				break
 			} else {
 				go n.WriteToInterface() // 注册成功则开始监听并写入数据到interface
 			}
@@ -160,6 +180,18 @@ func main() {
 			killing = true
 			go func() {
 				log.Info("Interrupt: closing down...")
+				listenEP.Close()
+				time.Sleep(1 * time.Second)
+				// close tun0 fd
+				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
+					tun.Close(linkEP.GetFd())
+				}
+				time.Sleep(1 * time.Second)
+				// shut down tun networkCard
+				if err := utils.CleanTunIP(tunName, listenEP.GetSubnetIP(), listenEP.GetSubnetMask(), false); nil != err {
+					log.Errorf("%v", err)
+				}
+
 				log.Info("done")
 				os.Exit(1)
 			}()

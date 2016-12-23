@@ -141,7 +141,7 @@ func newSender(ep *endpoint, iss seqnum.Value, sndWnd seqnum.Size, mss uint16) *
 		maxPayloadSize:   int(mss),
 	}
 
-	m := int(ep.route.MTU()) - header.TCPMinimumSize
+	m := int(ep.route.MTU()) + header.TCPMinimumSize
 	if m < s.maxPayloadSize {
 		s.maxPayloadSize = m
 	}

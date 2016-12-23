@@ -18,7 +18,7 @@ import (
 // ip link set dev tun0 up mtu 1500 qlen 100
 // ip addr add dev tun0 local 10.1.1.1 peer 10.1.1.2
 // ip route add 10.1.1.0/24 via 10.1.1.2 dev tun0
-func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
+func SetTunIP(tunName string, mtu uint32, subnetIP global.Address, subnetMask uint8, client bool) error {
 	ip, subnet, err := ParseCIDR(subnetIP, subnetMask)
 	if nil != err {
 		return err
@@ -40,7 +40,7 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 		//return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
 
-	sargs = fmt.Sprintf("link set dev %s up mtu 1500 qlen 100", tunName)
+	sargs = fmt.Sprintf("link set dev %s up mtu %d qlen 100", tunName, mtu)
 	args = strings.Split(sargs, " ")
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
@@ -61,15 +61,31 @@ func SetTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
 	}
 
-	peerStr := fmt.Sprintf("%d.%d.%d.%d", peer[0], peer[1], peer[2], peer[3])
-	if err := RedirectGateway(tunName, peerStr); nil != err {
-		log.Errorf("%v", err)
+	if client { // for client
+		peerStr := fmt.Sprintf("%d.%d.%d.%d", peer[0], peer[1], peer[2], peer[3])
+		if err := RedirectGateway(tunName, peerStr); nil != err {
+			log.Errorf("%v", err)
+		}
+	} else { // for server
+		sargs = "net.ipv4.ip_forward=1"
+		args = strings.Split(sargs, " ")
+		cmd = exec.Command("sysctl", args...)
+		if err := cmd.Run(); nil != err {
+			log.Errorf("sysctl %v err:%v", sargs, err)
+		}
+
+		sargs = "-t nat -A POSTROUTING -j MASQUERADE"
+		args = strings.Split(sargs, " ")
+		cmd = exec.Command("iptables", args...)
+		if err := cmd.Run(); nil != err {
+			log.Errorf("iptables %v err:%v", sargs, err)
+		}
 	}
 	return nil
 }
 
 // ip tuntap del mode tun tun0
-func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error {
+func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, client bool) error {
 	ip, subnet, err := ParseCIDR(subnetIP, subnetMask)
 	if nil != err {
 		return err
@@ -112,8 +128,24 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8) error
 		log.Errorf("ip %v err:%v", sargs, err)
 	}
 
-	if err := UnRedirectGateway(); nil != err {
-		log.Errorf("%v", err)
+	if client { // for client
+		if err := UnRedirectGateway(); nil != err {
+			log.Errorf("%v", err)
+		}
+	} else { // for server
+		sargs = "net.ipv4.ip_forward=0"
+		args = strings.Split(sargs, " ")
+		cmd = exec.Command("sysctl", args...)
+		if err := cmd.Run(); nil != err {
+			log.Errorf("sysctl %v err:%v", sargs, err)
+		}
+
+		sargs = "-t nat -D POSTROUTING -j MASQUERADE"
+		args = strings.Split(sargs, " ")
+		cmd = exec.Command("iptables", args...)
+		if err := cmd.Run(); nil != err {
+			log.Errorf("iptables %v err:%v", sargs, err)
+		}
 	}
 	return nil
 }
