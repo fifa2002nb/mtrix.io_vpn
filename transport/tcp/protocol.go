@@ -59,7 +59,7 @@ func (*protocol) ParsePorts(v buffer.View) (src, dst uint16, err error) {
 // particular, SYNs addressed to a non-existent connection are rejected by this
 // means."
 func (*protocol) HandleUnknownDestinationPacket(stack *stack.Stack, r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView) {
-	s := newSegment(r, id, vv, nil)
+	s := newSegment(r, id, vv, nil, 0)
 	defer s.decRef()
 
 	if !s.parse() {
@@ -85,7 +85,7 @@ func replyWithReset(stack *stack.Stack, s *segment) {
 
 	ack := s.sequenceNumber.Add(s.logicalLen())
 
-	sendTCP(stack, s.udpAddr, &s.route, s.id, nil, flagRst|flagAck, seq, ack, 0, s.subnetIP, s.subnetMask)
+	sendTCP(stack, s.udpAddr, s.udpPort, &s.route, s.id, nil, flagRst|flagAck, seq, ack, 0, s.subnetIP, s.subnetMask)
 }
 
 func init() {

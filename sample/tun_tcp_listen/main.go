@@ -41,26 +41,25 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 	}
 	go func() {
 		for {
-			packet := s.GetPacket()
+			packet := s.GetPacket(port)
+			log.Infof("[=>hearFromNet] port:%d WritToNet %v", port, packet.Addr)
 			udpConn.WriteTo(packet.Data, packet.Addr)
 		}
 	}()
 
 	// waiting for udp packet
-	for {
-		buf := make([]byte, 2048)
-		plen, addr, err := udpConn.ReadFromUDP(buf)
-		if nil != err {
-			log.Errorf("[<=hearFromNet] %v", err)
-		} else {
-			clientIP := global.Address(addr.IP.To4())
-			if ep, err := s.GetConnectedTransportEndpoint(clientIP); nil == err { //数据传输
-				(*ep).HandlePacket(buffer.View(buf[:plen]), addr)
-			} else { //建立连接
-				listenEP.HandlePacket(buffer.View(buf[:plen]), addr)
+	go func() {
+		for {
+			buf := make([]byte, 2048)
+			plen, addr, err := udpConn.ReadFromUDP(buf)
+			if nil != err {
+				log.Errorf("[<=hearFromNet] port:%v err:%v", port, err)
+			} else {
+				log.Infof("[<=hearFromNet] port:%d ReadFromUDP %v", port, addr)
+				listenEP.DispatchPacket(buffer.View(buf[:plen]), addr, port)
 			}
 		}
-	}
+	}()
 
 	return nil
 }
@@ -168,35 +167,35 @@ func main() {
 		}
 	}()
 
-	go func() {
-		sc := make(chan os.Signal, 1)
-		signal.Notify(sc, os.Interrupt)
-		killing := false
-		for range sc {
-			if killing {
-				log.Info("Second interrupt: exiting")
-				os.Exit(1)
-			}
-			killing = true
-			go func() {
-				log.Info("Interrupt: closing down...")
-				listenEP.Close()
-				time.Sleep(1 * time.Second)
-				// close tun0 fd
-				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
-					tun.Close(linkEP.GetFd())
-				}
-				time.Sleep(1 * time.Second)
-				// shut down tun networkCard
-				if err := utils.CleanTunIP(tunName, listenEP.GetSubnetIP(), listenEP.GetSubnetMask(), false); nil != err {
-					log.Errorf("%v", err)
-				}
+	go hearFromNet(listenEP, s, "", 40000)
+	go hearFromNet(listenEP, s, "", 40001)
+	go hearFromNet(listenEP, s, "", 40002)
 
-				log.Info("done")
-				os.Exit(1)
-			}()
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	killing := false
+	for range sc {
+		if killing {
+			log.Info("Second interrupt: exiting")
+			os.Exit(1)
 		}
-	}()
+		killing = true
+		go func() {
+			log.Info("Interrupt: closing down...")
+			listenEP.Close()
+			time.Sleep(1 * time.Second)
+			// close tun0 fd
+			if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
+				tun.Close(linkEP.GetFd())
+			}
+			time.Sleep(1 * time.Second)
+			// shut down tun networkCard
+			if err := utils.CleanTunIP(tunName, listenEP.GetSubnetIP(), listenEP.GetSubnetMask(), false); nil != err {
+				log.Errorf("%v", err)
+			}
 
-	hearFromNet(listenEP, s, "", 40000)
+			log.Info("done")
+			os.Exit(1)
+		}()
+	}
 }

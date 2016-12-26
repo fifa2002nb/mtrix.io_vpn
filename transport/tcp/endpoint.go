@@ -139,11 +139,11 @@ type endpoint struct {
 	rcv *receiver
 	snd *sender
 
-	clientIP global.Address
-	addrsArr []*net.UDPAddr
-	addrsMap map[[6]byte]*net.UDPAddr // hash(ip+port) -> *net.UDPAddr
-	addrMu   sync.Mutex
-	addrIdx  int
+	clientIP  global.Address
+	addrports []uint16                // ports array
+	addrsMap  map[uint16]*net.UDPAddr // port -> *net.UDPAddr
+	addrMu    sync.RWMutex
+	addrIdx   uint32
 
 	subnetInited bool
 	subnetIP     global.Address
@@ -164,8 +164,8 @@ func newEndpoint(stack *stack.Stack, netProto global.NetworkProtocolNumber, wait
 		noDelay:      true,
 		reuseAddr:    true,
 		clientIP:     global.Address("\x00\x00\x00\x00"),
-		addrsArr:     make([]*net.UDPAddr, 0),
-		addrsMap:     make(map[[6]byte]*net.UDPAddr),
+		addrports:    make([]uint16, 0),
+		addrsMap:     make(map[uint16]*net.UDPAddr),
 		addrIdx:      0,
 		subnetInited: false,
 		subnetIP:     global.Address("\x00\x00\x00\x00"),
@@ -209,30 +209,32 @@ func (e *endpoint) GetClientIP() global.Address {
 	return e.clientIP
 }
 
-func (e *endpoint) PushNetAddr(addr *net.UDPAddr) {
+func (e *endpoint) PushNetAddr(addr *net.UDPAddr, localPort uint16) {
 	if nil == addr {
 		return
 	}
-	hash := e.stack.NetAddrHash(addr)
-	if _, ok := e.addrsMap[hash]; !ok {
+	if _, ok := e.addrsMap[localPort]; !ok {
 		e.addrMu.Lock()
-		e.addrsArr = append(e.addrsArr, addr)
-		e.addrsMap[hash] = addr
+		e.addrports = append(e.addrports, localPort)
+		e.addrsMap[localPort] = addr
 		e.addrMu.Unlock()
 	}
 }
 
-func (e *endpoint) PopNetAddr() *net.UDPAddr {
-	size := len(e.addrsArr)
-	if 0 == size {
-		return nil
+func (e *endpoint) PopNetAddr() (*net.UDPAddr, uint16) {
+	if 0 == len(e.addrports) {
+		return nil, 0
 	}
-	if e.addrIdx >= size {
-		e.addrIdx = 0
+	if int(e.addrIdx) >= len(e.addrports) {
+		atomic.StoreUint32(&e.addrIdx, 0)
 	}
-	addr := e.addrsArr[e.addrIdx]
-	e.addrIdx++
-	return addr
+	idx := atomic.LoadUint32(&e.addrIdx)
+	e.addrMu.RLock()
+	localPort := e.addrports[idx]
+	addr := e.addrsMap[localPort]
+	e.addrMu.RUnlock()
+	atomic.CompareAndSwapUint32(&e.addrIdx, idx, idx+1)
+	return addr, localPort
 }
 
 // Readiness returns the current readiness of the endpoint. For example, if
@@ -463,7 +465,7 @@ func (e *endpoint) WriteToNet(v buffer.View, to *global.FullAddress) (uintptr, e
 
 	var views [1]buffer.View
 	vv := v.ToVectorisedView(views)
-	s := newSegment(&e.route, e.id, &vv, nil)
+	s := newSegment(&e.route, e.id, &vv, nil, 0)
 
 	e.sndBufMu.Lock()
 
@@ -1011,9 +1013,28 @@ func (e *endpoint) GetRemoteAddress() (global.FullAddress, error) {
 	}, nil
 }
 
+func (e *endpoint) DispatchPacket(v buffer.View, udpAddr *net.UDPAddr, udpPort uint16) {
+	if nil == udpAddr {
+		return
+	}
+	if header.TCPMinimumSize > len(v) {
+		return
+	}
+	h := header.TCP(v)
+	clientIP := h.SubnetIP()
+	//clientIP := global.Address(udpAddr.IP.To4())
+	if ep, err := e.stack.GetConnectedTransportEndpoint(clientIP); nil == err {
+		// 找到已建立的连接，进行处理
+		(*ep).HandlePacket(v, udpAddr, udpPort)
+	} else {
+		//建立新连接
+		e.HandlePacket(v, udpAddr, udpPort)
+	}
+}
+
 // HandlePacket is called by the stack when new packets arrive to this transport
 // endpoint.
-func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
+func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr, udpPort uint16) {
 	if nil == udpAddr {
 		return
 	}
@@ -1029,7 +1050,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 
 	log.Infof("[<=HandlePacket] dataLen:%v ID:%v", len(v), id)
 
-	s := newSegment(&route, id, &vv, udpAddr)
+	s := newSegment(&route, id, &vv, udpAddr, udpPort)
 	if !s.parse() {
 		// TODO: Inform the stack that the packet is malformed.
 		s.decRef()
@@ -1037,7 +1058,10 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr) {
 		return
 	}
 
-	e.PushNetAddr(udpAddr) // push newAddr to addrsArr & addrsMap
+	// connectionListener except
+	if e.state != stateListen {
+		e.PushNetAddr(udpAddr, udpPort) // push newAddr to addrsArr & addrsMap
+	}
 
 	// Send packet to worker goroutine.
 	select {

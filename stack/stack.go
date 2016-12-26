@@ -54,8 +54,11 @@ type Stack struct {
 	// port <-> channel
 	//startPort uint16
 	//portNum   uint16
-	tmu                         sync.RWMutex
-	ToNetChan                   chan *global.EndpointData
+	tmu        sync.RWMutex
+	ToNetChans map[uint16]chan *global.EndpointData //[port]<=>channel
+	ToNetPorts []uint16
+	ToNetIdx   uint16
+
 	ConnectedTransportEndpoints map[global.Address]global.Endpoint
 
 	*utils.IPPool
@@ -65,15 +68,14 @@ type Stack struct {
 // transport protocols.
 func New(network []string, transport []string) global.Stack {
 	s := &Stack{
-		transportProtocols: make(map[global.TransportProtocolNumber]*transportProtocolState),
-		networkProtocols:   make(map[global.NetworkProtocolNumber]NetworkProtocol),
-		nics:               make(map[global.NICID]*NIC),
-		PortManager:        ports.NewPortManager(),
-		ToNetChan:          make(chan *global.EndpointData, 2048), // fixed
-		//startPort:          uint16(40000),                 // fixed
-		//portNum:            uint16(1),                     // fixed
+		transportProtocols:          make(map[global.TransportProtocolNumber]*transportProtocolState),
+		networkProtocols:            make(map[global.NetworkProtocolNumber]NetworkProtocol),
+		nics:                        make(map[global.NICID]*NIC),
+		PortManager:                 ports.NewPortManager(),
+		ToNetChans:                  make(map[uint16]chan *global.EndpointData), // fixed
+		ToNetPorts:                  make([]uint16, 0),
+		ToNetIdx:                    0,
 		ConnectedTransportEndpoints: make(map[global.Address]global.Endpoint),
-		//IPPool: utils.NewIPPool(addr),
 	}
 
 	// Add specified network protocols.
@@ -119,8 +121,28 @@ func (s *Stack) GetNextIP() (*net.IPNet, error) {
 	return s.IPPool.NextIP()
 }
 
-func (s *Stack) GetPacket() *global.EndpointData {
-	return <-s.ToNetChan
+func (s *Stack) PutPacket(data *global.EndpointData) {
+	if c, ok := s.ToNetChans[data.Port]; ok { // for server
+		c <- data
+	} else { // for client
+		if 0 == len(s.ToNetPorts) {
+			return
+		}
+		if int(s.ToNetIdx) >= len(s.ToNetPorts) {
+			s.ToNetIdx = 0
+		}
+		port := s.ToNetPorts[s.ToNetIdx]
+		s.ToNetChans[port] <- data
+		s.ToNetIdx++
+	}
+}
+
+func (s *Stack) GetPacket(localPort uint16) *global.EndpointData {
+	if _, ok := s.ToNetChans[localPort]; !ok {
+		s.ToNetChans[localPort] = make(chan *global.EndpointData)
+		s.ToNetPorts = append(s.ToNetPorts, localPort)
+	}
+	return <-s.ToNetChans[localPort]
 }
 
 // SetTransportProtocolHandler sets the per-stack default handler for the given

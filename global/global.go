@@ -276,12 +276,14 @@ type Endpoint interface {
 	GetSubnetMask() uint8
 
 	GetClientIP() Address
-	PushNetAddr(addr *net.UDPAddr)
-	PopNetAddr() *net.UDPAddr
+	PushNetAddr(addr *net.UDPAddr, localPort uint16)
+	PopNetAddr() (*net.UDPAddr, uint16)
 	InitSubnet(ip Address, netmask uint8) error
 	InitedSubnet() bool
 
-	HandlePacket(v buffer.View, udpAddr *net.UDPAddr)
+	DispatchPacket(v buffer.View, udpAddr *net.UDPAddr, udpPort uint16)
+
+	HandlePacket(v buffer.View, udpAddr *net.UDPAddr, udpPort uint16)
 	BindToStack(Addr Address) error
 }
 
@@ -367,6 +369,7 @@ type EndpointData struct {
 	Data buffer.View
 	R    *Route
 	Addr *net.UDPAddr // peer addr
+	Port uint16
 }
 
 // Stack represents a networking stack, with all supported protocols, NICs, and
@@ -405,7 +408,8 @@ type Stack interface {
 	// stack.
 	CheckNetworkProtocol(protocol NetworkProtocolNumber) bool
 
-	GetPacket() *EndpointData
+	PutPacket(data *EndpointData)
+	GetPacket(localPort uint16) *EndpointData
 
 	NetAddrHash(a *net.UDPAddr) [6]byte
 

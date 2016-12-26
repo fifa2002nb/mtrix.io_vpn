@@ -203,10 +203,10 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 	}
 
 	//n.addr = s.udpAddr
-	n.clientIP = global.Address(s.udpAddr.IP.To4())
+	/*n.clientIP = global.Address(s.udpAddr.IP.To4())
 	if err := n.stack.RegisterConnectedTransportEndpoint(n); nil != err {
 		return nil, err
-	}
+	}*/
 
 	// assign endpoint's subnetIP when tcp handshaking
 	cltIP, err := n.stack.GetNextIP()
@@ -215,6 +215,13 @@ func (l *listenContext) createConnectedEndpoint(s *segment, iss seqnum.Value, ir
 	}
 	subnetIP := global.Address(cltIP.IP.To4())
 	subnetMask, _ := cltIP.Mask.Size()
+
+	// use subnetIP as clientIP
+	n.clientIP = subnetIP
+	if err := n.stack.RegisterConnectedTransportEndpoint(n); nil != err {
+		return nil, err
+	}
+	n.PushNetAddr(s.udpAddr, s.udpPort)
 	n.InitSubnet(subnetIP, uint8(subnetMask))
 
 	n.isRegistered = true
@@ -296,7 +303,8 @@ func (e *endpoint) handleListenSegment(ctx *listenContext, s *segment) {
 			go e.handleSynSegment(ctx, s, mss)
 		} else {
 			cookie := ctx.createCookie(s.id, s.sequenceNumber, encodeMSS(mss))
-			sendSynTCP(e.stack, e.PopNetAddr(), &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd, e.subnetIP, e.subnetMask)
+			udpAddr, udpPort := e.PopNetAddr()
+			sendSynTCP(e.stack, udpAddr, udpPort, &s.route, s.id, flagSyn|flagAck, cookie, s.sequenceNumber+1, ctx.rcvWnd, e.subnetIP, e.subnetMask)
 		}
 	case flagAck:
 		if data, ok := ctx.isCookieValid(s.id, s.ackNumber-1, s.sequenceNumber-1); ok && int(data) < len(mssTable) {

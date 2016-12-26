@@ -150,7 +150,8 @@ func (h *handshake) synSentState(s *segment) error {
 	// but resend our own SYN and wait for it to be acknowledged in the
 	// SYN-RCVD state.
 	h.state = handshakeSynRcvd
-	sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+	udpAddr, udpPort := h.ep.PopNetAddr()
+	sendSynTCP(h.ep.stack, udpAddr, udpPort, &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 
 	return nil
 }
@@ -189,8 +190,8 @@ func (h *handshake) synRcvdState(s *segment) error {
 		if err := h.resetState(); err != nil {
 			return err
 		}
-
-		sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+		udpAddr, udpPort := h.ep.PopNetAddr()
+		sendSynTCP(h.ep.stack, udpAddr, udpPort, &s.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 		return nil
 	}
 
@@ -214,8 +215,9 @@ func (h *handshake) execute() error {
 
 	// Send the initial SYN segment and loop until the handshake is
 	// completed.
-	log.Infof("[=>execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
-	sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+	log.Infof("[=>execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
+	udpAddr, udpPort := h.ep.PopNetAddr()
+	sendSynTCP(h.ep.stack, udpAddr, udpPort, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 	for h.state != handshakeCompleted {
 		select {
 		case <-rt.C:
@@ -224,18 +226,19 @@ func (h *handshake) execute() error {
 				return global.ErrTimeout
 			}
 			rt.Reset(timeOut)
-			log.Infof("[=>execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v", h.flags, h.iss, h.ackNum, h.rcvWnd)
-			sendSynTCP(h.ep.stack, h.ep.PopNetAddr(), &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
+			log.Infof("[=>execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
+			udpAddr, udpPort := h.ep.PopNetAddr()
+			sendSynTCP(h.ep.stack, udpAddr, udpPort, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 
 		case s := <-h.ep.segmentChan:
 			h.sndWnd = s.window
 			var err error
 			switch h.state {
 			case handshakeSynRcvd:
-				log.Infof("[<=execute] synRcvd flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
+				log.Infof("[<=execute] synRcvd flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
 				err = h.synRcvdState(s)
 			case handshakeSynSent:
-				log.Infof("[<=execute] synSent flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
+				log.Infof("[<=execute] synSent flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
 				err = h.synSentState(s)
 			}
 			s.decRef()
@@ -293,7 +296,7 @@ func parseSynOptions(s *segment) (mss uint16, ok bool) {
 	return mss, true
 }
 
-func sendSynTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.TransportEndpointID, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
+func sendSynTCP(s *stack.Stack, addr *net.UDPAddr, port uint16, r *stack.Route, id stack.TransportEndpointID, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
 	// Initialize the options.
 	mss := r.MTU() + header.TCPMinimumSize
 	options := []byte{
@@ -301,12 +304,12 @@ func sendSynTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Tran
 		header.TCPOptionMSS, 4, byte(mss >> 8), byte(mss),
 	}
 
-	return sendTCPWithOptions(s, addr, r, id, nil, flags, seq, ack, rcvWnd, options, subnetIP, subnetMask)
+	return sendTCPWithOptions(s, addr, port, r, id, nil, flags, seq, ack, rcvWnd, options, subnetIP, subnetMask)
 }
 
 // sendTCPWithOptions sends a TCP segment with the provided options via the
 // provided network endpoint and under the provided identity.
-func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.TransportEndpointID, data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, opts []byte, subnetIP global.Address, subnetMask uint8) error {
+func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, port uint16, r *stack.Route, id stack.TransportEndpointID, data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, opts []byte, subnetIP global.Address, subnetMask uint8) error {
 	// Allocate a buffer for the TCP header.
 	hdr := buffer.NewPrependable(header.TCPMinimumSize + int(r.MaxHeaderLength()) + len(opts))
 
@@ -342,16 +345,18 @@ func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id st
 	//p := uint16(rand.Intn(s.portNum)) // rand port
 	hview := hdr.View()
 	d := hview.Merge(data)
-	s.ToNetChan <- &global.EndpointData{
+	log.Infof("[=>sendTCPWithOptions] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
+	s.PutPacket(&global.EndpointData{
 		Data: d,
 		Addr: addr,
-	}
+		Port: port,
+	})
 	return nil
 }
 
 // sendTCP sends a TCP segment via the provided network endpoint and under the
 // provided identity.
-func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.TransportEndpointID, data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
+func sendTCP(s *stack.Stack, addr *net.UDPAddr, port uint16, r *stack.Route, id stack.TransportEndpointID, data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
 	// Allocate a buffer for the TCP header.
 	hdr := buffer.NewPrependable(header.TCPMinimumSize + int(r.MaxHeaderLength()))
 
@@ -386,17 +391,19 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, r *stack.Route, id stack.Transpo
 	//p := uint16(rand.Intn(s.portNum)) // rand port
 	hview := hdr.View()
 	d := hview.Merge(data)
-	log.Infof("[=>sendTCP] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd)
-	s.ToNetChan <- &global.EndpointData{
+	log.Infof("[=>sendTCP] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
+	s.PutPacket(&global.EndpointData{
 		Data: d,
 		Addr: addr,
-	}
+		Port: port,
+	})
 	return nil
 }
 
 // sendRaw sends a TCP segment to the endpoint's peer.
 func (e *endpoint) sendRaw(data buffer.View, flags byte, seq, ack seqnum.Value, rcvWnd seqnum.Size, subnetIP global.Address, subnetMask uint8) error {
-	return sendTCP(e.stack, e.PopNetAddr(), &e.route, e.id, data, flags, seq, ack, rcvWnd, subnetIP, subnetMask)
+	udpAddr, udpPort := e.PopNetAddr()
+	return sendTCP(e.stack, udpAddr, udpPort, &e.route, e.id, data, flags, seq, ack, rcvWnd, subnetIP, subnetMask)
 }
 
 func (e *endpoint) handleWrite(ok bool) {

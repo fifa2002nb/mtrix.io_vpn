@@ -46,16 +46,18 @@ type segment struct {
 	window         seqnum.Size
 	options        []byte
 	udpAddr        *net.UDPAddr
+	udpPort        uint16
 	subnetIP       global.Address
 	subnetMask     uint8
 }
 
-func newSegment(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView, addr *net.UDPAddr) *segment {
+func newSegment(r *stack.Route, id stack.TransportEndpointID, vv *buffer.VectorisedView, addr *net.UDPAddr, udpPort uint16) *segment {
 	s := &segment{
 		refCnt:  1,
 		id:      id,
 		route:   r.Clone(),
 		udpAddr: addr,
+		udpPort: udpPort,
 	}
 	s.data = vv.Clone(s.views[:])
 	return s
@@ -72,6 +74,7 @@ func (s *segment) clone() *segment {
 		route:          s.route.Clone(),
 		viewToDeliver:  s.viewToDeliver,
 		udpAddr:        s.udpAddr,
+		udpPort:        s.udpPort,
 		subnetIP:       s.subnetIP,
 		subnetMask:     s.subnetMask,
 	}

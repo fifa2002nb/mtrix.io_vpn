@@ -169,32 +169,6 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView
 		return
 	}
 
-	/*mtu := int(r.MTU()) - header.MMMinimumSize - header.TCPMinimumSize
-	if vv.Size() > mtu {
-		for {
-			var views [8]buffer.View
-			data := vv.Clone(views[:])
-			data.CapLength(mtu)
-			vv.TrimFront(mtu)
-
-			hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
-			m := header.MM(hdr.Prepend(header.MMMinimumSize))
-			m.Encode(&header.MMFields{
-				Magic:         uint16(header.MMMagic), // MM协议的魔幻数
-				Flag:          header.MM_FLG_DAT,      // 暂时初始化为DAT类型
-				Seq:           uint32(0),              // 暂时初始化为0
-				SessionId:     r.LocalAddress,         // sessionId用客户端4字节IP来代替
-				PayloadLength: uint16(data.Size()),    // 数据报大小
-				TotalLength:   uint16(data.Size()),    // 暂时初始化为0，传输层中增加noise后计算总长度
-			})
-
-			// do something
-			e.dispatcher.ReverseDeliverTransportPacket(r, header.TCPProtocolNumber, &hdr, &data)
-			if vv.Size() <= mtu {
-				break
-			}
-		}
-	}*/
 	hdr := buffer.NewPrependable(int(r.MaxHeaderLength()))
 	m := header.MM(hdr.Prepend(header.MMMinimumSize))
 	m.Encode(&header.MMFields{

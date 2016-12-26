@@ -29,33 +29,40 @@ import (
 
 func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port uint16) error {
 	ipport := fmt.Sprintf("%v:%v", server, port)
-	udpAddr, err := net.ResolveUDPAddr("udp", ipport)
+	addr, err := net.ResolveUDPAddr("udp", ipport)
 	if err != nil {
 		log.Errorf("Invalid port: %v", err)
 		return err
 	}
-	udpConn, err := net.DialUDP("udp", nil, udpAddr)
+
+	clientEP.PushNetAddr(addr, port) //客户端需要主动注册到endpoint中，服务端会被动注册
+
+	udpConn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
 		log.Errorf("Failed to connect udp port %v:%v", port, err)
 		return err
 	}
 	go func() {
 		for {
-			packet := s.GetPacket()
+			packet := s.GetPacket(port)
+			log.Infof("[=>connectToNet] port:%v WriteTo %v", port, addr)
 			udpConn.Write(packet.Data)
 		}
 	}()
 
 	// wait for udp packets
-	for {
-		buf := make([]byte, 2048)
-		plen, udpAddr, err := udpConn.ReadFromUDP(buf)
-		if nil != err {
-			log.Errorf("%v", err)
-		} else {
-			clientEP.HandlePacket(buffer.View(buf[:plen]), udpAddr)
+	go func() {
+		for {
+			buf := make([]byte, 2048)
+			plen, udpAddr, err := udpConn.ReadFromUDP(buf)
+			log.Infof("[<=connectToNet] port:%v readFromUDP %v", port, udpAddr)
+			if nil != err {
+				log.Errorf("%v", err)
+			} else {
+				clientEP.HandlePacket(buffer.View(buf[:plen]), udpAddr, port)
+			}
 		}
-	}
+	}()
 	return nil
 }
 
@@ -146,36 +153,36 @@ func main() {
 
 	go LazyEnableNIC(connectEP, s, tunName, linkID, NICID)
 
-	go func() {
-		sc := make(chan os.Signal, 1)
-		signal.Notify(sc, os.Interrupt)
-		killing := false
-		for range sc {
-			if killing {
-				log.Info("Second interrupt: exiting")
-				time.Sleep(3 * time.Second)
-				os.Exit(1)
-			}
-			killing = true
-			go func() {
-				log.Info("Interrupt: closing down...")
-				// close connection
-				connectEP.Close()
-				time.Sleep(1 * time.Second)
-				// close tun0 fd
-				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
-					tun.Close(linkEP.GetFd())
-				}
-				time.Sleep(1 * time.Second)
-				// shut down tun networkCard
-				if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask(), true); nil != err {
-					log.Errorf("%v", err)
-				}
-				log.Info("done")
-				os.Exit(1)
-			}()
-		}
-	}()
+	go connectToNet(connectEP, s, addrName, 40000)
+	go connectToNet(connectEP, s, addrName, 40001)
+	go connectToNet(connectEP, s, addrName, 40002)
 
-	connectToNet(connectEP, s, addrName, 40000)
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	killing := false
+	for range sc {
+		if killing {
+			log.Info("Second interrupt: exiting")
+			time.Sleep(3 * time.Second)
+			os.Exit(1)
+		}
+		killing = true
+		go func() {
+			log.Info("Interrupt: closing down...")
+			// close connection
+			connectEP.Close()
+			time.Sleep(1 * time.Second)
+			// close tun0 fd
+			if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
+				tun.Close(linkEP.GetFd())
+			}
+			time.Sleep(1 * time.Second)
+			// shut down tun networkCard
+			if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask(), true); nil != err {
+				log.Errorf("%v", err)
+			}
+			log.Info("done")
+			os.Exit(1)
+		}()
+	}
 }
