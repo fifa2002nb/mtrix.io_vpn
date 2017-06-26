@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	// common
 	mode      string
 	portStart int
 	portEnd   int
@@ -56,6 +57,9 @@ func Start(c *cli.Context) {
 
 func confParser(c *cli.Context) error {
 	var err error
+	if c.IsSet("debug") {
+		log.SetLevel(log.DebugLevel)
+	}
 	if c.IsSet("configure") || c.IsSet("C") {
 		var conf *goini.Config
 		if c.IsSet("configure") {

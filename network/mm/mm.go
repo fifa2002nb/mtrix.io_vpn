@@ -156,7 +156,7 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 	}
 	// 剥掉MM协议的头部，发送数据部分
 	payload.TrimFront(header.MMMinimumSize)
-	log.Infof("[<=WritePacket] payloadSize:%v route:%v", len(payload), r)
+	log.Debugf("[<=WritePacket] payloadSize:%v route:%v", len(payload), r)
 	e.ParsePacketHeaders(payload, "<=") // for test
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }

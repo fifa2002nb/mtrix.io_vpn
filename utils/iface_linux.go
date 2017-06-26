@@ -153,7 +153,7 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, clien
 // redirect default gateway
 func RedirectGateway(tunName, gw string) error {
 	// postup subnetwork's routes
-	cmd := exec.Command("./scripts/chnroute-up.sh")
+	cmd := exec.Command("./scripts/chnroute-up_linux.sh")
 	if err := cmd.Run(); nil != err {
 		log.Errorf("[RedirectGateway] postup:%v", err)
 		return err
@@ -198,7 +198,7 @@ func UnRedirectGateway() error {
 		}
 	}
 	// postdown subnetwork's routes
-	cmd := exec.Command("./scripts/chnroute-down.sh")
+	cmd := exec.Command("./scripts/chnroute-down_linux.sh")
 	if err := cmd.Run(); nil != err {
 		log.Errorf("[UnRedirectGateway] postdown:%v", err)
 	}

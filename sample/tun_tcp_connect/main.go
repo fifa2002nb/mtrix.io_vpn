@@ -46,7 +46,7 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 	go func() {
 		for {
 			packet := s.GetPacket(port)
-			log.Infof("[=>connectToNet] port:%v WriteTo %v", port, addr)
+			log.Debugf("[=>connectToNet] port:%v WriteTo %v", port, addr)
 			udpConn.Write(packet.Data)
 		}
 	}()
@@ -56,7 +56,7 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 		for {
 			buf := make([]byte, 2048)
 			plen, udpAddr, err := udpConn.ReadFromUDP(buf)
-			log.Infof("[<=connectToNet] port:%v readFromUDP %v", port, udpAddr)
+			log.Debugf("[<=connectToNet] port:%v readFromUDP %v", port, udpAddr)
 			if nil != err {
 				log.Errorf("%v", err)
 			} else {
@@ -79,11 +79,14 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		if clientEP.InitedSubnet() {
 			defaultMtu := 1500
 			if "darwin" == runtime.GOOS { // mac os的机制不同，需要先打开虚拟网卡文件才能配置
+				log.Infof("ready to open %s", tunName)
 				fd, err = tun.Open(tunName)
 				if err != nil {
 					clientEP.Close()
 					log.Errorf("openTun err:%v", err)
 					return
+				} else {
+					log.Infof("tun0 opened with fd:%v", fd)
 				}
 			}
 			if err = utils.SetTunIP(tunName, uint32(defaultMtu), clientEP.GetSubnetIP(), clientEP.GetSubnetMask(), true); nil == err {
@@ -193,6 +196,9 @@ func main() {
 				if -1 != fd {
 					tun.Close(fd)
 				}
+				log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
+			} else {
+				log.Infof("linkID:%v not found", linkID)
 			}
 			time.Sleep(1 * time.Second)
 			// shut down tun networkCard

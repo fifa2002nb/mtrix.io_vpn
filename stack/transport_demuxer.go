@@ -97,7 +97,7 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 	defer eps.mu.RUnlock()
 	// Try to find a match with the id as provided.
 	if ep := eps.endpoints[id]; ep != nil {
-		log.Infof("[=>reverseDeliverPacket] hdrLen:%v dataLen:%v %v", len(hdr.View()), vv.Size(), id)
+		log.Debugf("[=>reverseDeliverPacket] hdrLen:%v dataLen:%v %v", len(hdr.View()), vv.Size(), id)
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true
 	}
@@ -107,7 +107,7 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 
 	nid.LocalAddress = nid.RemoteAddress
 	if ep := eps.endpoints[nid]; ep != nil {
-		log.Infof("[=>reverseDeliverPacket] hdrLen:%v dataLen:%v %v", len(hdr.View()), vv.Size(), nid)
+		log.Debugf("[=>reverseDeliverPacket] hdrLen:%v dataLen:%v %v", len(hdr.View()), vv.Size(), nid)
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true
 	}
@@ -115,7 +115,7 @@ func (d *transportDemuxer) reverseDeliverPacket(r *Route, protocol global.Transp
 	nid = id
 	nid.RemoteAddress = nid.LocalAddress
 	if ep := eps.endpoints[nid]; ep != nil {
-		log.Infof("[=>reverseDeliverPacket] hdrLen:%v len:%v %v", len(hdr.View()), vv.Size(), nid)
+		log.Debugf("[=>reverseDeliverPacket] hdrLen:%v len:%v %v", len(hdr.View()), vv.Size(), nid)
 		ep.ReverseHandlePacket(r, id, hdr, vv)
 		return true
 	}

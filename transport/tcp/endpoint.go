@@ -437,7 +437,7 @@ func (e *endpoint) ReverseHandlePacket(r *stack.Route, id stack.TransportEndpoin
 	if nil != err {
 		log.Errorf("[=>ReverseHandlePacket]%v", err)
 	}
-	log.Infof("[=>ReverseHandlePacket] hdrLen:%v dataLen:%v", len(hdr.View()), vv.Size())
+	log.Debugf("[=>ReverseHandlePacket] hdrLen:%v dataLen:%v", len(hdr.View()), vv.Size())
 }
 
 func (e *endpoint) Write(v buffer.View, to *global.FullAddress) (uintptr, error) {
@@ -1048,7 +1048,7 @@ func (e *endpoint) HandlePacket(v buffer.View, udpAddr *net.UDPAddr, udpPort uin
 	vv := v.ToVectorisedView(views)
 	id := stack.TransportEndpointID{uint16(0), e.id.LocalAddress, uint16(0), remote}
 
-	log.Infof("[<=HandlePacket] dataLen:%v ID:%v", len(v), id)
+	log.Debugf("[<=HandlePacket] dataLen:%v ID:%v", len(v), id)
 
 	s := newSegment(&route, id, &vv, udpAddr, udpPort)
 	if !s.parse() {

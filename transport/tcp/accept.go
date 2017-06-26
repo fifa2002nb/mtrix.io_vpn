@@ -346,7 +346,7 @@ func (e *endpoint) protocolListenLoop(rcvWnd seqnum.Size) error {
 	for {
 		select {
 		case s := <-e.segmentChan:
-			log.Infof("[<=accept] flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
+			log.Debugf("[<=accept] flags:%v ackNumber:%v sequenceNumber:%v route:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route)
 			e.handleListenSegment(ctx, s)
 			s.decRef()
 

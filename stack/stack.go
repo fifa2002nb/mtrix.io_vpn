@@ -55,6 +55,7 @@ type Stack struct {
 	//startPort uint16
 	//portNum   uint16
 	tmu        sync.RWMutex
+	nmu        sync.RWMutex
 	ToNetChans map[uint16]chan *global.EndpointData //[port]<=>channel
 	ToNetPorts []uint16
 	ToNetIdx   uint16
@@ -122,6 +123,8 @@ func (s *Stack) GetNextIP() (*net.IPNet, error) {
 }
 
 func (s *Stack) PutPacket(data *global.EndpointData) {
+	s.nmu.RLock()
+	defer s.nmu.RUnlock()
 	if c, ok := s.ToNetChans[data.Port]; ok { // for server
 		c <- data
 	} else { // for client
@@ -138,6 +141,8 @@ func (s *Stack) PutPacket(data *global.EndpointData) {
 }
 
 func (s *Stack) GetPacket(localPort uint16) *global.EndpointData {
+	s.nmu.RLock()
+	defer s.nmu.RUnlock()
 	if _, ok := s.ToNetChans[localPort]; !ok {
 		s.ToNetChans[localPort] = make(chan *global.EndpointData)
 		s.ToNetPorts = append(s.ToNetPorts, localPort)

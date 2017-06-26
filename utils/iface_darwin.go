@@ -37,6 +37,8 @@ func SetTunIP(tunName string, mtu uint32, subnetIP global.Address, subnetMask ui
 	cmd := exec.Command("ifconfig", args...)
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ifconfig %v err:%v", sargs, err))
+	} else {
+		log.Infof("ifconfig %s", sargs)
 	}
 
 	sargs = fmt.Sprintf("link set dev %s up mtu %d qlen 100", tunName, mtu)
@@ -44,6 +46,8 @@ func SetTunIP(tunName string, mtu uint32, subnetIP global.Address, subnetMask ui
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+	} else {
+		log.Infof("ip %s", sargs)
 	}
 
 	sargs = fmt.Sprintf("route add %s via %s dev %s", subnet, peer, tunName)
@@ -51,6 +55,8 @@ func SetTunIP(tunName string, mtu uint32, subnetIP global.Address, subnetMask ui
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ip %v err:%v", sargs, err))
+	} else {
+		log.Infof("ip %s", sargs)
 	}
 
 	if client { // for client
@@ -97,6 +103,8 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, clien
 	cmd := exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		log.Errorf("ip %v err:%v", sargs, err)
+	} else {
+		log.Infof("ip %s", sargs)
 	}
 
 	sargs = fmt.Sprintf("link set %s down", tunName)
@@ -104,6 +112,8 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, clien
 	cmd = exec.Command("ip", args...)
 	if err := cmd.Run(); nil != err {
 		log.Errorf("ip %v err:%v", sargs, err)
+	} else {
+		log.Infof("ip %s", sargs)
 	}
 
 	sargs = fmt.Sprintf("%s %s %s down", tunName, ip, peer)
@@ -111,6 +121,8 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, clien
 	cmd = exec.Command("ifconfig", args...)
 	if err := cmd.Run(); nil != err {
 		return errors.New(fmt.Sprintf("ifconfig %v err:%v", sargs, err))
+	} else {
+		log.Infof("ifconfig %s", sargs)
 	}
 
 	if client { // for client
@@ -138,12 +150,13 @@ func CleanTunIP(tunName string, subnetIP global.Address, subnetMask uint8, clien
 // redirect default gateway
 func RedirectGateway(tunName, gw string) error {
 	// postup subnetwork's routes
-	cmd := exec.Command("./scripts/chnroute-up.sh")
+	/*cmd := exec.Command("./scripts/chnroute-up_darwin.sh")
 	if err := cmd.Run(); nil != err {
 		log.Errorf("[RedirectGateway] postup:%v", err)
 		return err
-	}
-	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	}*/
+	//subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	subnets := []string{"115.224.0.0/12", "58.208.0.0/12", "180.96.0.0/11"}
 	for _, subnet := range subnets {
 		/* for client
 		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
@@ -165,7 +178,8 @@ func RedirectGateway(tunName, gw string) error {
 
 // unredirect default gateway
 func UnRedirectGateway() error {
-	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	//subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	subnets := []string{"115.224.0.0/12", "58.208.0.0/12", "180.96.0.0/11"}
 	for _, subnet := range subnets {
 		/* for client
 		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
@@ -183,10 +197,10 @@ func UnRedirectGateway() error {
 		}
 	}
 	// postdown subnetwork's routes
-	cmd := exec.Command("./scripts/chnroute-down.sh")
+	/*cmd := exec.Command("./scripts/chnroute-down_darwin.sh")
 	if err := cmd.Run(); nil != err {
 		log.Errorf("[UnRedirectGateway] postdown:%v", err)
-	}
+	}*/
 	return nil
 }
 
