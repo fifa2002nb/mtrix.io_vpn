@@ -65,7 +65,7 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 }
 
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) != 3 {
 		log.Fatal("Usage: ", os.Args[0], " <tun-device> <debug>")
 	}
 

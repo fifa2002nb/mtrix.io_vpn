@@ -120,7 +120,7 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 }
 
 func main() {
-	if len(os.Args) != 3 {
+	if len(os.Args) != 4 {
 		log.Fatal("Usage: ", os.Args[0], " <tun-device> <remote-addr> <debug>")
 	}
 
