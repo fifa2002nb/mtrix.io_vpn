@@ -66,10 +66,14 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 
 func main() {
 	if len(os.Args) != 2 {
-		log.Fatal("Usage: ", os.Args[0], " <tun-device> ")
+		log.Fatal("Usage: ", os.Args[0], " <tun-device> <debug>")
 	}
 
 	tunName := os.Args[1]
+	debug := os.Args[2]
+	if "debug" == debug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	rand.Seed(time.Now().UnixNano())
 

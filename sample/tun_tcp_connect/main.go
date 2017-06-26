@@ -121,11 +121,15 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 
 func main() {
 	if len(os.Args) != 3 {
-		log.Fatal("Usage: ", os.Args[0], " <tun-device> <remote-addr>")
+		log.Fatal("Usage: ", os.Args[0], " <tun-device> <remote-addr> <debug>")
 	}
 
 	tunName := os.Args[1]
 	addrName := os.Args[2]
+	debug := os.Args[3]
+	if "debug" == debug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	rand.Seed(time.Now().UnixNano())
 
