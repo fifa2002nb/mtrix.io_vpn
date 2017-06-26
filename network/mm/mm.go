@@ -121,7 +121,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View, direction string) error {
 		}
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.UDPMinimumSize)
-		log.Infof("[%sParsePacketHeaders] udp src %v:%v dst %v:%v", direction, src, srcPort, dst, dstPort)
+		log.Debugf("[%sParsePacketHeaders] udp src %v:%v dst %v:%v", direction, src, srcPort, dst, dstPort)
 	} else if p == header.TTPProtocolNumber {
 		// parse udp header
 		hdr := header.TTP(nv)
@@ -138,7 +138,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View, direction string) error {
 
 		srcPort, dstPort = hdr.SourcePort(), hdr.DestinationPort()
 		nv.TrimFront(header.TTPMinimumSize)
-		log.Infof("[%sParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", direction, src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
+		log.Debugf("[%sParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", direction, src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
 	} else {
 		log.Errorf("[%sParsePacketHeaders] unknown transport protocol.", direction)
 	}
