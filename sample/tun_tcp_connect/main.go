@@ -24,6 +24,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
 )
 
@@ -67,24 +68,38 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 }
 
 func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, linkID global.LinkEndpointID, NICID global.NICID) {
+	var (
+		mtu int
+		fd  int
+		err error
+	)
 	for {
 		timer := time.NewTimer(time.Second * 1)
 		<-timer.C
 		if clientEP.InitedSubnet() {
 			defaultMtu := 1500
-			if err := utils.SetTunIP(tunName, uint32(defaultMtu), clientEP.GetSubnetIP(), clientEP.GetSubnetMask(), true); nil == err {
-				mtu, err := rawfile.GetMTU(tunName) //其实已经在SetTunIP预设，这里装模作样取一下
+			if "darwin" == runtime.GOOS { // mac os的机制不同，需要先打开虚拟网卡文件才能配置
+				fd, err = tun.Open(tunName)
+				if err != nil {
+					clientEP.Close()
+					log.Errorf("openTun err:%v", err)
+					return
+				}
+			}
+			if err = utils.SetTunIP(tunName, uint32(defaultMtu), clientEP.GetSubnetIP(), clientEP.GetSubnetMask(), true); nil == err {
+				mtu, err = rawfile.GetMTU(tunName) //其实已经在SetTunIP预设，这里装模作样取一下
 				if err != nil {
 					clientEP.Close()
 					log.Errorf("getMTU err:%v", err)
 					return
 				}
-
-				fd, err := tun.Open(tunName)
-				if err != nil {
-					clientEP.Close()
-					log.Errorf("openTun err:%v", err)
-					return
+				if "linux" == runtime.GOOS { // linux下可以先配置后打开虚拟网卡文件
+					fd, err = tun.Open(tunName)
+					if err != nil {
+						clientEP.Close()
+						log.Errorf("openTun err:%v", err)
+						return
+					}
 				}
 				linkEP := stack.FindLinkEndpoint(linkID)
 				linkEP.SetMTU(uint32(mtu)) // 然并软,mtu默认为1500，在setTunIP中写死;另外，tcp的sender已经用服务端发来的mss初始化了maxPayloadSize，后面需要优化
@@ -174,7 +189,10 @@ func main() {
 			time.Sleep(1 * time.Second)
 			// close tun0 fd
 			if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
-				tun.Close(linkEP.GetFd())
+				fd := linkEP.GetFd()
+				if -1 != fd {
+					tun.Close(fd)
+				}
 			}
 			time.Sleep(1 * time.Second)
 			// shut down tun networkCard

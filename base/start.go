@@ -6,7 +6,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/widuu/goini"
+	"mtrix.io_vpn/link/tun"
 	"os"
+	"os/signal"
+
 	"strconv"
 )
 
@@ -24,6 +27,10 @@ var (
 )
 
 func Start(c *cli.Context) {
+	var (
+		fd  int
+		err error
+	)
 	if err := confParser(c); nil != err {
 		log.Fatalf("%v", err)
 		os.Exit(9)
@@ -32,10 +39,19 @@ func Start(c *cli.Context) {
 		// code here
 	} else if "client" == mode {
 		// code here
+		tunName := "tun0"
+		fd, err = tun.Open(tunName)
+		if nil != err {
+			log.Fatalf("%v", err)
+		} else {
+			log.Infof("%s opened with fd:%v", tunName, fd)
+		}
 	} else {
 		log.Fatal("unknown mode.")
 		os.Exit(8)
 	}
+	waitingForExit()
+	tun.Close(fd)
 }
 
 func confParser(c *cli.Context) error {
@@ -88,4 +104,22 @@ func confParser(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+func waitingForExit() {
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, os.Interrupt)
+	killing := false
+	for range sc {
+		if killing {
+			log.Info("Second interrupt: exiting")
+			os.Exit(1)
+		}
+		killing = true
+		go func() {
+			log.Info("Interrupt: closing down...")
+			log.Info("done")
+			os.Exit(1)
+		}()
+	}
 }

@@ -1,6 +1,11 @@
 #!/bin/bash -
 
-OLDGW=$(ip route show 0/0 | head -n1 | grep 'via' | grep -Po '\d+\.\d+\.\d+\.\d+')
+OS=$(uname)
+if "Darwin" = "${OS}"; then
+    OLDGW=$(ip route |grep "default"| head -n1 |awk '{print $3}')
+else
+    OLDGW=$(ip route show 0/0 | head -n1 | grep 'via' | grep -Po '\d+\.\d+\.\d+\.\d+')
+fi
 
 if [ $OLDGW == '' ]; then
     exit 0
