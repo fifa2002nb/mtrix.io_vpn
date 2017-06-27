@@ -172,8 +172,8 @@ func main() {
 	}()
 
 	go hearFromNet(listenEP, s, "", 40000)
-	go hearFromNet(listenEP, s, "", 40001)
-	go hearFromNet(listenEP, s, "", 40002)
+	//go hearFromNet(listenEP, s, "", 40001)
+	//go hearFromNet(listenEP, s, "", 40002)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
