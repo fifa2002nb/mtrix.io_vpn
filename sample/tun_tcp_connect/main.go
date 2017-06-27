@@ -86,7 +86,7 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 					log.Errorf("openTun err:%v", err)
 					return
 				} else {
-					log.Infof("tun0 opened with fd:%v", fd)
+					log.Infof("%s opened with fd:%v", tunName, fd)
 				}
 			}
 			if err = utils.SetTunIP(tunName, uint32(defaultMtu), clientEP.GetSubnetIP(), clientEP.GetSubnetMask(), true); nil == err {
@@ -200,8 +200,8 @@ func main() {
 				if -1 != fd {
 					log.Infof("closing %s...", tunName)
 					tun.Close(fd)
+					log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
 				}
-				log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
 				time.Sleep(1 * time.Second)
 			}
 			// shut down tun networkCard
