@@ -1166,23 +1166,23 @@ ip route del 115.69.64.0/20
 ip route del 115.84.0.0/18
 ip route del 115.84.192.0/19
 ip route del 115.85.192.0/18
-#ip route del 115.100.0.0/14
-#ip route del 115.104.0.0/14
-#ip route del 115.120.0.0/14
-#ip route del 115.124.16.0/20
-#ip route del 115.148.0.0/14
-#ip route del 115.152.0.0/15
-#ip route del 115.154.0.0/15
-#ip route del 115.156.0.0/15
-#ip route del 115.158.0.0/16
-#ip route del 115.159.0.0/16
-#ip route del 115.166.64.0/19
-#ip route del 115.168.0.0/14
-#ip route del 115.172.0.0/14
-#ip route del 115.180.0.0/14
-#ip route del 115.190.0.0/15
-#ip route del 115.192.0.0/11
-#ip route del 115.224.0.0/12
+ip route del 115.100.0.0/14
+ip route del 115.104.0.0/14
+ip route del 115.120.0.0/14
+ip route del 115.124.16.0/20
+ip route del 115.148.0.0/14
+ip route del 115.152.0.0/15
+ip route del 115.154.0.0/15
+ip route del 115.156.0.0/15
+ip route del 115.158.0.0/16
+ip route del 115.159.0.0/16
+ip route del 115.166.64.0/19
+ip route del 115.168.0.0/14
+ip route del 115.172.0.0/14
+ip route del 115.180.0.0/14
+ip route del 115.190.0.0/15
+ip route del 115.192.0.0/11
+ip route del 115.224.0.0/12
 ip route del 116.0.8.0/21
 ip route del 116.0.24.0/21
 ip route del 116.1.0.0/16
@@ -3804,5 +3804,6 @@ ip route del 223.254.0.0/16
 ip route del 223.255.0.0/17
 ip route del 223.255.236.0/22
 ip route del 223.255.252.0/23
+ip route del 173.255.249.41/32
 
 rm /tmp/vpn_oldgw
