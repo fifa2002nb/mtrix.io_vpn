@@ -155,8 +155,8 @@ func RedirectGateway(tunName, gw string) error {
 		log.Errorf("[RedirectGateway] postup:%v", err)
 		return err
 	}*/
-	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
-	//subnets := []string{"108.177.97.104/12"} // for test
+	//subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	subnets := []string{"108.177.97.104/12", "64.233.189.139/12"} // for test
 	for _, subnet := range subnets {
 		/* for client
 		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
@@ -178,8 +178,8 @@ func RedirectGateway(tunName, gw string) error {
 
 // unredirect default gateway
 func UnRedirectGateway() error {
-	subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
-	//subnets := []string{"108.177.97.104/12"} // fot test
+	//subnets := []string{"0.0.0.0/1", "128.0.0.0/1"}
+	subnets := []string{"64.233.189.139/12", "108.177.97.104/12"} // fot test
 	for _, subnet := range subnets {
 		/* for client
 		   10.1.1.4        0.0.0.0         255.255.255.255 UH    0      0        0 tun0
