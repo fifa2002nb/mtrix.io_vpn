@@ -140,7 +140,7 @@ func (e *endpoint) ParsePacketHeaders(v buffer.View, direction string) error {
 		nv.TrimFront(header.TTPMinimumSize)
 		log.Debugf("[%sParsePacketHeaders] tcp src %v:%v dst %v:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", direction, src, srcPort, dst, dstPort, options, sequenceNumber, ackNumber, flags, window)
 	} else {
-		//log.Errorf("[%sParsePacketHeaders] unknown transport protocol.", direction)
+		log.Debugf("[%sParsePacketHeaders] maybe icmp protocol.", direction)
 	}
 	return nil
 }
