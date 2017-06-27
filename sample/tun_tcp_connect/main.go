@@ -194,32 +194,19 @@ func main() {
 			// close connection
 			connectEP.Close()
 			time.Sleep(1 * time.Second)
-			if "linux" == runtime.GOOS {
-				// close tun0 fd
-				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
-					fd := linkEP.GetFd()
-					if -1 != fd {
-						tun.Close(fd)
-					}
-					log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
-					time.Sleep(1 * time.Second)
+			// close tun0 fd
+			if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
+				fd := linkEP.GetFd()
+				if -1 != fd {
+					log.Infof("closing %s...", tunName)
+					tun.Close(fd)
 				}
+				log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
+				time.Sleep(1 * time.Second)
 			}
 			// shut down tun networkCard
 			if err := utils.CleanTunIP(tunName, connectEP.GetSubnetIP(), connectEP.GetSubnetMask(), true); nil != err {
 				log.Errorf("%v", err)
-			}
-			if "darwin" == runtime.GOOS {
-				// close tun0 fd
-				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
-					fd := linkEP.GetFd()
-					if -1 != fd {
-						log.Infof("closing %s...", tunName)
-						tun.Close(fd)
-					}
-					log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
-					time.Sleep(1 * time.Second)
-				}
 			}
 			log.Info("done")
 			os.Exit(1)
