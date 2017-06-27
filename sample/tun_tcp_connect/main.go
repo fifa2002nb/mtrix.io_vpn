@@ -214,6 +214,7 @@ func main() {
 				if linkEP := stack.FindLinkEndpoint(linkID); nil != linkEP {
 					fd := linkEP.GetFd()
 					if -1 != fd {
+						log.Infof("closing %s...", tunName)
 						tun.Close(fd)
 					}
 					log.Infof("closed %s with fd:%v", tunName, linkEP.GetFd())
