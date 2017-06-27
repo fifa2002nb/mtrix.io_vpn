@@ -79,7 +79,7 @@ func LazyEnableNIC(clientEP global.Endpoint, s global.Stack, tunName string, lin
 		if clientEP.InitedSubnet() {
 			defaultMtu := 1500
 			if "darwin" == runtime.GOOS { // mac os的机制不同，需要先打开虚拟网卡文件才能配置
-				log.Infof("ready to open %s", tunName)
+				log.Infof("opening %s...", tunName)
 				fd, err = tun.Open(tunName)
 				if err != nil {
 					clientEP.Close()
