@@ -3805,5 +3805,6 @@ ip route del 223.255.0.0/17
 ip route del 223.255.236.0/22
 ip route del 223.255.252.0/23
 ip route del 173.255.249.41/32
+ip route del 212.129.46.86/12
 
 rm /tmp/vpn_oldgw
