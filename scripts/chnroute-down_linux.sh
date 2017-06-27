@@ -3806,6 +3806,7 @@ route del 223.254.0.0/16
 route del 223.255.0.0/17
 route del 223.255.236.0/22
 route del 223.255.252.0/23
+route del 172.104.114.109/32
 EOF
 
 rm /tmp/vpn_oldgw
