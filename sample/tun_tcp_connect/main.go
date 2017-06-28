@@ -176,8 +176,9 @@ func main() {
 	go LazyEnableNIC(connectEP, s, tunName, linkID, NICID)
 
 	go connectToNet(connectEP, s, addrName, 40000)
-	//go connectToNet(connectEP, s, addrName, 40001)
-	//go connectToNet(connectEP, s, addrName, 40002)
+	go connectToNet(connectEP, s, addrName, 40001)
+	go connectToNet(connectEP, s, addrName, 40002)
+	go connectToNet(connectEP, s, addrName, 40003)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)

@@ -199,7 +199,7 @@ func (h *handshake) synRcvdState(s *segment) error {
 	// peer acknowledges our SYN, the handshake is completed.
 	if s.flagIsSet(flagAck) {
 		h.state = handshakeCompleted
-		h.ep.InitSubnet(s.subnetIP, s.subnetMask)
+		//h.ep.InitSubnet(s.subnetIP, s.subnetMask)
 		return nil
 	}
 

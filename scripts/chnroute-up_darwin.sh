@@ -3812,7 +3812,5 @@ ip route add 223.254.0.0/16 via $OLDGW metric 5
 ip route add 223.255.0.0/17 via $OLDGW metric 5
 ip route add 223.255.236.0/22 via $OLDGW metric 5
 ip route add 223.255.252.0/23 via $OLDGW metric 5
+
 ip route add 173.255.249.41/32 via $OLDGW metric 5
-ip route add 212.129.46.86/32 via $OLDGW metric 5
-ip route add 216.58.209.36/32 via $OLDGW metric 5
-ip route add 239.255.255.250/32 via $OLDGW metric 5
