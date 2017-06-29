@@ -1022,7 +1022,6 @@ func (e *endpoint) DispatchPacket(v buffer.View, udpAddr *net.UDPAddr, udpPort u
 	}
 	h := header.TCP(v)
 	clientIP := h.SubnetIP()
-	//clientIP := global.Address(udpAddr.IP.To4())
 	if ep, err := e.stack.GetConnectedTransportEndpoint(clientIP); nil == err {
 		// 找到已建立的连接，进行处理
 		(*ep).HandlePacket(v, udpAddr, udpPort)

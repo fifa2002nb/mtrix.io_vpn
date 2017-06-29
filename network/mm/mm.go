@@ -157,12 +157,12 @@ func (e *endpoint) WritePacket(r *stack.Route, payload buffer.View, protocol glo
 	// 剥掉MM协议的头部，发送数据部分
 	payload.TrimFront(header.MMMinimumSize)
 	log.Debugf("[<=WritePacket] payloadSize:%v route:%v", len(payload), r)
-	e.ParsePacketHeaders(payload, "<=") // for test
+	//e.ParsePacketHeaders(payload, "<=") // for test
 	return e.linkEP.WritePacket(r, payload, ProtocolNumber)
 }
 
 func (e *endpoint) ReverseHandlePacket(r *stack.Route, vv *buffer.VectorisedView) {
-	e.ParsePacketHeaders(vv.ToView(), "=>") // for test
+	//e.ParsePacketHeaders(vv.ToView(), "=>") // for test
 
 	h := header.IPv4(vv.First())
 	if !h.IsValid(vv.Size()) {
