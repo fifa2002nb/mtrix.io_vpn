@@ -42,7 +42,7 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 	go func() {
 		for {
 			packet := s.GetPacket(port)
-			log.Debugf("[=>hearFromNet] port:%d WritToNet %v", port, packet.Addr)
+			log.Infof("[=>hearFromNet] port:%d WritToNet %v", port, packet.Addr)
 			udpConn.WriteTo(packet.Data, packet.Addr)
 		}
 	}()
@@ -55,7 +55,7 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 			if nil != err {
 				log.Errorf("[<=hearFromNet] port:%v err:%v", port, err)
 			} else {
-				log.Debugf("[<=hearFromNet] port:%d ReadFromUDP %v", port, addr)
+				log.Infof("[<=hearFromNet] port:%d ReadFromUDP %v", port, addr)
 				listenEP.DispatchPacket(buffer.View(buf[:plen]), addr, port)
 			}
 		}

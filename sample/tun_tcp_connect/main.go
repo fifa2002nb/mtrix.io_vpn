@@ -46,7 +46,7 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 	go func() {
 		for {
 			packet := s.GetPacket(port)
-			log.Debugf("[=>connectToNet] port:%v WriteTo %v", port, addr)
+			log.Infof("[=>connectToNet] port:%v WriteTo %v", port, addr)
 			udpConn.Write(packet.Data)
 		}
 	}()
@@ -56,7 +56,7 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 		for {
 			buf := make([]byte, 2048)
 			plen, udpAddr, err := udpConn.ReadFromUDP(buf)
-			log.Debugf("[<=connectToNet] port:%v readFromUDP %v", port, udpAddr)
+			log.Infof("[<=connectToNet] port:%v readFromUDP %v", port, udpAddr)
 			if nil != err {
 				log.Errorf("%v", err)
 			} else {
