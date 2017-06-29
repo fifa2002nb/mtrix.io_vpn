@@ -39,7 +39,6 @@ func connectToNet(clientEP global.Endpoint, s global.Stack, server string, port 
 	clientEP.PushNetAddr(addr, port) //客户端需要主动注册到endpoint中，服务端会被动注册
 
 	udpConn, err := net.DialUDP("udp", nil, addr)
-	defer udpConn.Close()
 	if err != nil {
 		log.Errorf("Failed to connect udp port %v:%v", port, err)
 		return err

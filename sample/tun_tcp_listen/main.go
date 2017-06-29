@@ -35,7 +35,6 @@ func hearFromNet(listenEP global.Endpoint, s global.Stack, server string, port u
 		return err
 	}
 	udpConn, err := net.ListenUDP("udp", udpAddr)
-	defer udpConn.Close()
 	if err != nil {
 		log.Errorf("Failed to connect udp port %v:%v", port, err)
 		return err
