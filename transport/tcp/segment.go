@@ -141,6 +141,6 @@ func (s *segment) parse() bool {
 	s.window = seqnum.Size(h.WindowSize())
 	s.subnetIP = h.SubnetIP()
 	s.subnetMask = h.SubnetMask()
-	log.Debugf("[<=parse] dataOffset:%v dataLen:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", offset, s.data.Size(), s.options, s.sequenceNumber, s.ackNumber, s.flags, s.window)
+	log.Infof("[<=rcvTCP] dataOffset:%v dataLen:%v options:%v seqNum:%v ackNum:%v flags:%v window:%v", offset, s.data.Size(), s.options, s.sequenceNumber, s.ackNumber, s.flags, s.window)
 	return true
 }

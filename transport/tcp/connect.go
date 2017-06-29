@@ -215,7 +215,7 @@ func (h *handshake) execute() error {
 
 	// Send the initial SYN segment and loop until the handshake is
 	// completed.
-	log.Debugf("[=>execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
+	log.Infof("[=>execute] send syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
 	udpAddr, udpPort := h.ep.PopNetAddr()
 	sendSynTCP(h.ep.stack, udpAddr, udpPort, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 	for h.state != handshakeCompleted {
@@ -226,7 +226,7 @@ func (h *handshake) execute() error {
 				return global.ErrTimeout
 			}
 			rt.Reset(timeOut)
-			log.Debugf("[=>execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
+			log.Infof("[=>execute] reSend syn flags:%v iss:%v ackNum:%v revWnd:%v subnetIP:%v", h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP)
 			udpAddr, udpPort := h.ep.PopNetAddr()
 			sendSynTCP(h.ep.stack, udpAddr, udpPort, &h.ep.route, h.ep.id, h.flags, h.iss, h.ackNum, h.rcvWnd, h.ep.subnetIP, h.ep.subnetMask)
 
@@ -235,10 +235,10 @@ func (h *handshake) execute() error {
 			var err error
 			switch h.state {
 			case handshakeSynRcvd:
-				log.Debugf("[<=execute] synRcvd flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
+				log.Infof("[<=execute] synRcvd flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
 				err = h.synRcvdState(s)
 			case handshakeSynSent:
-				log.Debugf("[<=execute] synSent flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
+				log.Infof("[<=execute] synSent flags:%v ackNumber:%v sequenceNumber:%v route:%v subnetIP:%v", s.flags, s.ackNumber, s.sequenceNumber, s.route, h.ep.subnetIP)
 				err = h.synSentState(s)
 			}
 			s.decRef()
@@ -345,7 +345,7 @@ func sendTCPWithOptions(s *stack.Stack, addr *net.UDPAddr, port uint16, r *stack
 	//p := uint16(rand.Intn(s.portNum)) // rand port
 	hview := hdr.View()
 	d := hview.Merge(data)
-	log.Debugf("[=>sendTCPWithOptions] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
+	log.Infof("[=>sendTCPWithOptions] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
 	s.PutPacket(&global.EndpointData{
 		Data: d,
 		Addr: addr,
@@ -391,7 +391,7 @@ func sendTCP(s *stack.Stack, addr *net.UDPAddr, port uint16, r *stack.Route, id 
 	//p := uint16(rand.Intn(s.portNum)) // rand port
 	hview := hdr.View()
 	d := hview.Merge(data)
-	log.Debugf("[=>sendTCP] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
+	log.Infof("[=>sendTCP] hdrLen:%v dataLen:%v totalLen:%v seqNum:%v ackNum:%v flags:%v window:%v subnetIP:%v addr:%v port:%v", len(hview), len(data), len(d), seq, ack, flags, rcvWnd, subnetIP, addr, port)
 	s.PutPacket(&global.EndpointData{
 		Data: d,
 		Addr: addr,
