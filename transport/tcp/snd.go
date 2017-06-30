@@ -7,7 +7,7 @@ package tcp
 import (
 	"math"
 	"time"
-
+	log "github.com/Sirupsen/logrus"
 	"mtrix.io_vpn/buffer"
 	"mtrix.io_vpn/header"
 	"mtrix.io_vpn/seqnum"
@@ -275,6 +275,7 @@ func (s *sender) sendData() {
 	// eventually.
 	var seg *segment
 	end := s.sndUna.Add(s.sndWnd)
+	log.Infof("[=>sendData] outstanding:%v sndUna:%v sndCwnd:%v", s.outstanding, s.sndUna, s.sndCwnd)
 	for seg = s.writeNext; seg != nil && s.outstanding < s.sndCwnd; seg = seg.Next() {
 		// We abuse the flags field to determine if we have already
 		// assigned a sequence number to this segment.
@@ -320,7 +321,6 @@ func (s *sender) sendData() {
 		s.sendSegment(nil, flagAck|flagFin, s.sndNxt)
 		s.sndNxt++
 	}
-
 	s.enableResendTimer()
 }
 
